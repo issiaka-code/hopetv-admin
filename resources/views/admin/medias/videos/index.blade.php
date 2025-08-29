@@ -19,12 +19,6 @@
             transition: opacity 0.3s ease;
         }
 
-        .section-title {
-            font-size: 1.5rem;
-            color: #4e73df;
-            margin-bottom: 0;
-        }
-
         .video-card {
             border-radius: 10px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
@@ -86,17 +80,6 @@
 
         .video-thumbnail:hover .thumbnail-overlay {
             opacity: 1;
-        }
-
-        .video-duration {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.75rem;
         }
 
         .video-card .card-title {
@@ -244,10 +227,6 @@
                 margin: 0.25rem;
             }
 
-            .modal-content {
-                border-radius: 0.5rem;
-            }
-
             .btn {
                 padding: 0.375rem 0.75rem;
                 font-size: 0.875rem;
@@ -286,20 +265,8 @@
 @endpush
 
 @section('content')
-    <section class="section">
+    <section class="section" style="margin-top: -25px;">
         <div class="section-body">
-            <!-- Afficher les messages de succès/erreur -->
-            @if (session('success'))
-                <div class="alert alert-success alert-dismissible show fade">
-                    <div class="alert-body">
-                        <button class="close" data-dismiss="alert">
-                            <span>&times;</span>
-                        </button>
-                        {{ session('success') }}
-                    </div>
-                </div>
-            @endif
-
             @if ($errors->any())
                 <div class="alert alert-danger alert-dismissible show fade">
                     <div class="alert-body">
@@ -315,7 +282,7 @@
                 </div>
             @endif
 
-            <div class="row mb-4">
+            <div class="row ">
                 <div class="col-12">
                     <div class="d-flex justify-content-between align-items-center section-header">
                         <h2 class="section-title">Vidéos disponibles</h2>
@@ -326,63 +293,115 @@
                 </div>
             </div>
 
+            <div class="row mb-4">
+                <form method="GET" action="{{ route('videos.index') }}" class="w-100">
+                    <div class="row g-2 d-flex flex-row justify-content-end align-items-center">
+                        <!-- Champ recherche -->
+                        <div class="col-md-3 my-1">
+                            <input type="text" name="search" value="{{ request('search') }}" class="form-control"
+                                placeholder="Rechercher une vidéo...">
+                        </div>
+
+                        <!-- Filtre par type -->
+                        <div class="col-md-3 my-1">
+                            <select name="type" class="form-control">
+                                <option value="">Tous</option>
+                                <option value="file" {{ request('type') === 'file' ? 'selected' : '' }}>Fichiers</option>
+                                <option value="link" {{ request('type') === 'link' ? 'selected' : '' }}>Liens</option>
+                            </select>
+                        </div> <!-- Bouton recherche -->
+                        <div class="col-md-2 my-1">
+                            <button class="btn btn-primary w-100" type="submit">
+                                <i class="fas fa-filter py-2"></i> Filtrer
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
             <!-- Grille de vidéos -->
             <div class="row">
                 <div class="col-12">
                     <div id="videos-grid">
                         @forelse($videos as $video)
                             @php
-                                $videoUrl =
-                                    $video->media && $video->media->url_fichier
-                                        ? ($video->media->type === 'link'
-                                            ? $video->media->url_fichier
-                                            : asset('storage/' . $video->media->url_fichier))
-                                        : '#';
                                 $isLink = $video->media && $video->media->type === 'link';
+
+                                if ($isLink) {
+                                    // Récupération de l’URL brute
+                                    $rawUrl = $video->media->url_fichier;
+
+                                    // Conversion d’un lien watch en embed
+                                    if (Str::contains($rawUrl, 'youtube.com/watch?v=')) {
+                                        $videoId = explode('v=', parse_url($rawUrl, PHP_URL_QUERY))[1] ?? null;
+                                        $thumbnailUrl = $videoId ? "https://www.youtube.com/embed/$videoId" : $rawUrl;
+                                    } elseif (Str::contains($rawUrl, 'youtu.be/')) {
+                                        $videoId = basename(parse_url($rawUrl, PHP_URL_PATH));
+                                        $thumbnailUrl = "https://www.youtube.com/embed/$videoId";
+                                    } else {
+                                        // Dans le cas où c’est déjà un embed ou un autre type de lien
+                                        $thumbnailUrl = $rawUrl;
+                                    }
+                                } else {
+                                    $thumbnailUrl = asset('storage/' . $video->media->url_fichier);
+                                }
                             @endphp
+
 
                             <div class="video-grid-item">
                                 <div class="card video-card">
+                                    <!-- Miniature -->
                                     <div class="video-thumbnail-container">
-                                        <div class="video-thumbnail position-relative" data-video-url="{{ $videoUrl }}"
-                                            data-video-name="{{ $video->nom }}">
+                                        <div class="video-thumbnail position-relative" data-video-url="{{ $thumbnailUrl }}"
+                                            data-video-name="{{ $video->nom }}"
+                                            data-is-link="{{ $isLink ? 'true' : 'false' }}">
+
                                             @if ($isLink)
-                                                <img src="https://via.placeholder.com/300x200/007bff/ffffff?text=Video+Link"
-                                                    alt="Miniature lien vidéo">
+                                                <iframe src="{{ $thumbnailUrl }}" frameborder="0" allowfullscreen></iframe>
                                             @else
-                                                <video preload="metadata" muted>
-                                                    <source src="{{ $videoUrl }}" type="video/mp4">
-                                                    Votre navigateur ne supporte pas la lecture de vidéos.
-                                                </video>
+                                                <video src="{{ $thumbnailUrl }}" controls></video>
                                             @endif
+
                                             <div class="thumbnail-overlay">
                                                 <i class="fas fa-play-circle"></i>
                                             </div>
                                         </div>
                                     </div>
 
+                                    <!-- Corps de la carte -->
                                     <div class="card-body">
-                                        <h5 class="card-title">{{ $video->nom }}</h5>
-                                        <p class="card-text text-muted small">
-                                            {{ Str::limit($video->description, 80) }}
+                                        <h5 class="card-title" title="{{ $video->nom }}">
+                                            {{ Str::limit($video->nom, 25) }}
+                                        </h5>
+
+                                        <p class="card-text text-muted small" title="{{ $video->description }}">
+                                            {{ Str::limit($video->description, 30) }}
                                         </p>
+
                                         <div class="d-flex justify-content-between align-items-center flex-wrap">
                                             <small class="text-muted mb-1">
                                                 {{ $video->created_at->format('d/m/Y') }}
                                             </small>
+
                                             <div class="btn-group">
+                                                <!-- Bouton Voir -->
                                                 <button class="btn btn-sm btn-outline-info view-video-btn rounded"
-                                                    data-video-url="{{ $videoUrl }}"
-                                                    data-video-name="{{ $video->nom }}">
+                                                    data-video-url="{{ $thumbnailUrl }}"
+                                                    data-video-name="{{ $video->nom }}" data-title="{{ $video->nom }}"
+                                                    data-description="{{ $video->description }}"
+                                                    data-is-link="{{ $isLink }}">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
+
+                                                <!-- Bouton Modifier -->
                                                 <button class="btn btn-sm btn-outline-primary edit-video-btn mx-1 rounded"
-                                                    data-toggle="modal" data-target="#editVideoModal"
                                                     data-video-id="{{ $video->id }}">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
+
+                                                <!-- Bouton Supprimer -->
                                                 <form action="{{ route('videos.destroy', $video->id) }}" method="POST"
-                                                    class="d-inline">
+                                                    class="d-inline delete-form">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-outline-danger rounded"
@@ -396,248 +415,32 @@
                                 </div>
                             </div>
                         @empty
-                            <div class="col-12 text-center py-5">
-                                <div class="empty-state">
-                                    <i class="fas fa-video-slash fa-4x text-muted mb-3"></i>
-                                    <h4 class="text-muted">Aucune vidéo disponible</h4>
-                                    <p class="text-muted">Commencez par ajouter votre première vidéo</p>
-                                </div>
-                            </div>
-                        @endforelse
                     </div>
+                    <div class="col-12 text-center py-5">
+                        <div class="empty-state">
+                            <i class="fas fa-video-slash fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">Aucune vidéo disponible</h4>
+                            <p class="text-muted">Commencez par ajouter votre première vidéo</p>
+                        </div>
+                    </div>
+                    @endforelse
                 </div>
             </div>
 
             <!-- Pagination si nécessaire -->
             @if ($videos->hasPages())
                 <div class="d-flex justify-content-center mt-4">
-                    {{ $videos->links() }}
+                    {{ $videos->appends(request()->query())->links() }}
                 </div>
             @endif
         </div>
     </section>
 
-    <div class="modal fade" id="addVideoModal" tabindex="-1" role="dialog" aria-labelledby="addVideoModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-static" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="addVideoModalLabel">Ajouter une vidéo</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form id="addVideoForm" method="POST" action="{{ route('videos.store') }}" enctype="multipart/form-data">
-                    @csrf
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label class="font-weight-bold">Nom <span class="text-danger">*</span></label>
-                            <input type="text" name="nom" id="addVideoNom"
-                                class="form-control @error('nom') is-invalid @enderror" required>
-                            @error('nom')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+    <!-- Modals (à garder tels quels) -->
+    @include('admin.medias.videos.modals.add')
+    @include('admin.medias.videos.modals.edit')
+    @include('admin.medias.videos.modals.view')
 
-                        <div class="form-group">
-                            <label class="font-weight-bold">Description <span class="text-danger">*</span></label>
-                            <textarea name="description" id="addVideoDescription" class="form-control @error('description') is-invalid @enderror"
-                                rows="3" required></textarea>
-                            @error('description')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="form-group">
-                            <label class="font-weight-bold">Type de vidéo <span class="text-danger">*</span></label>
-                            <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
-                                <label class="btn btn-outline-primary active">
-                                    <input type="radio" name="video_type" id="addVideoTypeFile" value="file"
-                                        autocomplete="off" checked> Fichier
-                                </label>
-                                <label class="btn btn-outline-primary">
-                                    <input type="radio" name="video_type" id="addVideoTypeLink" value="link"
-                                        autocomplete="off"> Lien
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Section Fichier Vidéo pour AJOUT -->
-                        <div id="addVideoFileSection">
-                            <div class="form-group">
-                                <label class="font-weight-bold">Fichier Vidéo <span class="text-danger">*</span></label>
-                                <div class="custom-file">
-                                    <input type="file" name="fichier_video" id="addVideoFichier"
-                                        class="custom-file-input @error('fichier_video') is-invalid @enderror"
-                                        accept="video/*" required>
-                                    <label class="custom-file-label" for="addVideoFichier">Choisir un fichier</label>
-                                    @error('fichier_video')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                                <small class="form-text text-muted">Formats acceptés: MP4, AVI, MOV, etc. (max
-                                    100MB)</small>
-                            </div>
-                        </div>
-
-                        <!-- Section Lien Vidéo pour AJOUT -->
-                        <div id="addVideoLinkSection" class="d-none">
-                            <div class="form-group">
-                                <label class="font-weight-bold">Lien de la vidéo <span
-                                        class="text-danger">*</span></label>
-                                <input type="url" name="lien_video" id="addVideoLink"
-                                    class="form-control @error('lien_video') is-invalid @enderror"
-                                    placeholder="https://example.com/video.mp4">
-                                @error('lien_video')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                                <small class="form-text text-muted">Entrez l'URL complète de la vidéo (YouTube, Vimeo, ou
-                                    lien direct)</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Enregistrer
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal pour ÉDITER une vidéo -->
-    <div class="modal fade" id="editVideoModal" tabindex="-1" role="dialog" aria-labelledby="editVideoModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-static" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-info text-dark">
-                    <h5 class="modal-title" id="editVideoModalLabel">Modifier la vidéo</h5>
-                    <button type="button" class="close text-dark" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form id="editVideoForm" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    @method('PUT')
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label class="font-weight-bold">Nom <span class="text-danger">*</span></label>
-                            <input type="text" name="nom" id="editVideoNom"
-                                class="form-control @error('nom') is-invalid @enderror" required>
-                            @error('nom')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="form-group">
-                            <label class="font-weight-bold">Description <span class="text-danger">*</span></label>
-                            <textarea name="description" id="editVideoDescription"
-                                class="form-control @error('description') is-invalid @enderror" rows="3" required></textarea>
-                            @error('description')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="form-group">
-                            <label class="font-weight-bold">Type de vidéo <span class="text-danger">*</span></label>
-                            <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
-                                <label class="btn btn-outline-info active" id="editVideoTypeFileLabel">
-                                    <input type="radio" name="video_type" id="editVideoTypeFile" value="file"
-                                        autocomplete="off" checked> Fichier
-                                </label>
-                                <label class="btn btn-outline-info" id="editVideoTypeLinkLabel">
-                                    <input type="radio" name="video_type" id="editVideoTypeLink" value="link"
-                                        autocomplete="off"> Lien
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Section Fichier Vidéo pour ÉDITION -->
-                        <div id="editVideoFileSection">
-                            <div class="form-group">
-                                <label class="font-weight-bold">Fichier Vidéo</label>
-                                <div class="custom-file">
-                                    <input type="file" name="fichier_video" id="editVideoFichier"
-                                        class="custom-file-input @error('fichier_video') is-invalid @enderror"
-                                        accept="video/*">
-                                    <label class="custom-file-label" for="editVideoFichier">Choisir un nouveau
-                                        fichier</label>
-                                    @error('fichier_video')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                                <small class="form-text text-muted">Formats acceptés: MP4, AVI, MOV, etc. (max
-                                    100MB)</small>
-
-                                <div id="editCurrentVideo" class="mt-2">
-                                    <small>Fichier actuel: <span id="editCurrentVideoName"></span></small>
-                                    <button type="button" class="btn btn-sm btn-info ml-2" id="editViewCurrentVideo">
-                                        <i class="fa fa-eye"></i> Voir
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Section Lien Vidéo pour ÉDITION -->
-                        <div id="editVideoLinkSection" class="d-none">
-                            <div class="form-group">
-                                <label class="font-weight-bold">Lien de la vidéo <span
-                                        class="text-danger">*</span></label>
-                                <input type="url" name="lien_video" id="editVideoLink"
-                                    class="form-control @error('lien_video') is-invalid @enderror"
-                                    placeholder="https://example.com/video.mp4">
-                                @error('lien_video')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                                <small class="form-text text-muted">Entrez l'URL complète de la vidéo</small>
-
-                                <div id="editCurrentLink" class="mt-2">
-                                    <small>Lien actuel: <span id="editCurrentLinkValue"></span></small>
-                                    <a href="#" target="_blank" class="btn btn-sm btn-info ml-2"
-                                        id="editViewCurrentLink">
-                                        <i class="fa fa-external-link-alt"></i> Voir
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-info">
-                            <i class="fas fa-save"></i> Mettre à jour
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal pour visualiser la vidéo (inchangé) -->
-    <div class="modal fade" id="videoViewModal" tabindex="-1" role="dialog" aria-labelledby="videoViewModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-static" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="videoViewModalLabel">Visualisation de la vidéo</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div id="videoPlayerContainer" class="text-center">
-                        <video id="modalVideoPlayer" controls class="w-100 d-none" style="max-height: 70vh;"></video>
-                        <iframe id="modalIframePlayer" class="w-100 d-none" style="max-height: 70vh;"
-                            allowfullscreen></iframe>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
-                </div>
-            </div>
-        </div>
-    </div>
 @endsection
 
 @push('scripts')
@@ -751,55 +554,82 @@
                 });
             });
 
-            // Visualisation de la vidéo actuelle dans le formulaire d'édition
             $(document).on('click', '#editViewCurrentVideo', function() {
                 const videoUrl = $(this).data('video-url');
                 $('#modalVideoPlayer').attr('src', videoUrl);
                 $('#videoViewModal').modal('show');
             });
 
-            // ===== GESTION COMMUNE =====
 
-            // Mettre à jour le bouton d'ajout pour ouvrir le bon modal
-            $('button[data-target="#videoFormModal"]').attr('data-target', '#addVideoModal');
+            // ===== GESTION COMMUNE =====
 
             // Visualisation des vidéos dans la grille
             $(document).on('click', '.view-video-btn, .video-thumbnail', function() {
                 const videoUrl = $(this).data('video-url');
                 const videoName = $(this).data('video-name');
+                const isLink = $(this).data('is-link') === 'true' || $(this).data('is-link') === true;
+                const videoDescription = $(this).closest('.video-card').find('.card-text').attr('title') ||
+                    '';
 
-                // Vérifier si c’est un lien externe (YouTube/Vimeo)
-                if (videoUrl.includes("youtube.com") || videoUrl.includes("vimeo.com")) {
-                    $('#modalVideoPlayer').addClass('d-none').attr('src', '');
-                    $('#modalIframePlayer').removeClass('d-none').attr('src', videoUrl);
+                // Masquer les deux lecteurs initialement
+                $('#modalVideoPlayer').addClass('d-none').attr('src', '');
+                $('#modalIframePlayer').addClass('d-none').attr('src', '');
+
+                if (isLink) {
+                    // C'est un lien externe
+                    let embedUrl = videoUrl;
+
+                    // Afficher l'iframe
+                    $('#modalIframePlayer')
+                        .attr('src', embedUrl)
+                        .removeClass('d-none');
+
                 } else {
-                    $('#modalIframePlayer').addClass('d-none').attr('src', '');
-                    $('#modalVideoPlayer').removeClass('d-none').attr('src', videoUrl);
+                    // C'est un fichier local
+                    $('#modalVideoPlayer')
+                        .attr('src', videoUrl)
+                        .removeClass('d-none');
                 }
 
-                $('#videoViewModal .modal-title').text('Visualisation: ' + videoName);
+                // Mettre à jour les informations de la vidéo
+                $('#videoTitle').text(videoName);
+                $('#videoDescription').text(videoDescription);
+
+                // Afficher le modal
                 $('#videoViewModal').modal('show');
             });
 
-            // Nettoyer la vidéo/iframe quand on ferme
+            // Nettoyage quand le modal se ferme
             $('#videoViewModal').on('hidden.bs.modal', function() {
-                $('#modalVideoPlayer').attr('src', '').addClass('d-none');
-                $('#modalIframePlayer').attr('src', '').addClass('d-none');
-            });
-
-
-            // Lecture automatique quand la modal de visualisation s'ouvre
-            $('#videoViewModal').on('shown.bs.modal', function() {
-                $('#modalVideoPlayer')[0].play().catch(function(error) {
-                    console.log('Lecture automatique bloquée:', error);
-                });
-            });
-
-            // Arrêter la lecture quand la modal se ferme
-            $('#videoViewModal').on('hidden.bs.modal', function() {
+                // Arrêter et réinitialiser la vidéo
                 const videoPlayer = $('#modalVideoPlayer')[0];
-                videoPlayer.pause();
-                videoPlayer.currentTime = 0;
+                if (videoPlayer) {
+                    videoPlayer.pause();
+                    videoPlayer.currentTime = 0;
+                }
+
+                // Supprimer la source de l'iframe pour libérer la mémoire
+                $('#modalIframePlayer').attr('src', '');
+
+                // Masquer les deux lecteurs
+                $('#modalVideoPlayer').addClass('d-none');
+                $('#modalIframePlayer').addClass('d-none');
+
+                // Vider les informations
+                $('#videoTitle').text('');
+                $('#videoDescription').text('');
+            });
+
+            // Gestion de la lecture automatique (optionnelle)
+            $('#videoViewModal').on('shown.bs.modal', function() {
+                // Tentative de lecture automatique pour les vidéos locales
+                const videoPlayer = $('#modalVideoPlayer')[0];
+                if (videoPlayer && !videoPlayer.classList.contains('d-none')) {
+                    videoPlayer.play().catch(function(error) {
+                        console.log('Lecture automatique bloquée:', error);
+                        // La lecture automatique peut être bloquée par le navigateur
+                    });
+                }
             });
 
             // Amélioration de l'expérience mobile

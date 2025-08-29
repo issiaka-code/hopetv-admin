@@ -8,180 +8,171 @@ use App\Models\Video;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use FFMpeg\Format\Video\X264;
+use FFMpeg\Coordinate\Dimension;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use RealRashid\SweetAlert\Facades\Alert;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 
+
 class VideoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $videos = Video::with(['media'])
-            ->where('is_deleted', false)
-            ->paginate(10);
+        $query = Video::with('media')->where('is_deleted', false)
+            ->latest();
+
+        // Recherche
+        if ($request->filled('search')) {
+            $query->where('nom', 'like', "%{$request->search}%")
+            ->orWhere('description', 'like', "%{$request->search}%");    
+        }
+
+        // Filtrage par type
+        if ($request->filled('type')) {
+            $query->whereHas('media', function ($q) use ($request) {
+                $q->where('type', $request->type === 'file' ? 'video' : 'link');
+            });
+        }
+
+        $videos = $query->paginate(12);
+
         return view('admin.medias.videos.index', compact('videos'));
     }
 
 
-public function store(Request $request)
-{
-    // Validation de base
-    $request->validate([
-        'nom' => 'required|string|max:255',
-        'description' => 'required|string',
-        'video_type' => 'required|in:file,link',
-    ]);
-
-    // Validation conditionnelle selon le type
-    if ($request->video_type === 'file') {
+    public function store(Request $request)
+    {
+        // Validation de base
         $request->validate([
-            'fichier_video' => 'required|file|mimes:mp4,avi,mov,wmv,flv,mkv,webm|max:1024000', // Augmentez la taille si nécessaire
+            'nom' => 'required|string|max:255',
+            'description' => 'required|string',
+            'video_type' => 'required|in:file,link',
         ]);
-    } elseif ($request->video_type === 'link') {
-        $request->validate([
-            'lien_video' => 'required|url',
-        ]);
-    }
 
-    try {
-        DB::beginTransaction();
-
-        $filePaths = [];
-        $type = $request->video_type === 'file' ? 'video' : 'link';
-
-        // Traitement selon le type
-        if ($request->video_type === 'file' && $request->hasFile('fichier_video')) {
-            $file = $request->file('fichier_video');
-            
-            if (!$file->isValid()) {
-                throw new \Exception('Fichier vidéo invalide');
-            }
-
-            // Générer un nom unique
-            $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-            $uniqueName = $originalName . '_' . now()->format('Ymd_His');
-            
-            // Stocker le fichier original temporairement
-            $tempPath = $file->storeAs('temp/videos', $uniqueName . '_original.' . $file->getClientOriginalExtension());
-            
-            // Convertir la vidéo en différentes qualités
-            $filePaths = $this->convertVideoForStreaming($tempPath, $uniqueName);
-            
-            // Supprimer le fichier temporaire
-            Storage::delete($tempPath);
-
+        // Validation conditionnelle selon le type
+        if ($request->video_type === 'file') {
+            $request->validate([
+                'fichier_video' => 'required|file|mimes:mp4,avi,mov,wmv,flv,mkv,webm|max:1024000', // Augmentez la taille si nécessaire
+            ]);
         } elseif ($request->video_type === 'link') {
-            $filePaths['original'] = $request->lien_video;
-            
-            if (!filter_var($filePaths['original'], FILTER_VALIDATE_URL)) {
-                throw new \Exception('URL de vidéo invalide');
+            $request->validate([
+                'lien_video' => 'required|url',
+            ]);
+        }
+
+        try {
+            DB::beginTransaction();
+            $filePaths = [];
+            $type = $request->video_type === 'file' ? 'video' : 'link';
+
+            if ($request->video_type === 'file' && $request->hasFile('fichier_video')) {
+                $file = $request->file('fichier_video');
+
+                if (!$file->isValid()) {
+                    throw new \Exception('Fichier vidéo invalide');
+                }
+
+                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                $uniqueName = $originalName . '_' . now()->format('Ymd_His');
+
+                // Stocker le fichier original temporairement
+                $tempPath = $file->storeAs('temp/videos', $uniqueName . '_original.' . $file->getClientOriginalExtension());
+
+                // Convertir la vidéo avec qualité réduite
+                $filePath = $this->reduceVideoQuality($tempPath, $uniqueName);
+
+                // Supprimer le fichier temporaire
+                Storage::delete($tempPath);
+
+                $filePaths = $filePath;
+            } elseif ($request->video_type === 'link') {
+                $filePaths = $request->lien_video;
+
+                if (!filter_var($filePaths, FILTER_VALIDATE_URL)) {
+                    throw new \Exception('URL de vidéo invalide');
+                }
+            } else {
+                throw new \Exception('Type de vidéo ou fichier manquant');
             }
-        } else {
-            throw new \Exception('Type de vidéo ou fichier manquant');
+
+            // Vérification finale
+            if (empty($filePaths)) {
+                throw new \Exception('Aucun fichier ou lien de vidéo fourni');
+            }
+
+            // Création du média
+            $media = Media::create([
+                'url_fichier' => $filePaths, // Stocker toutes les qualités
+                'type' => $type,
+                'insert_by' => auth()->id(),
+                'update_by' => auth()->id(),
+            ]);
+
+            if (!$media) {
+                throw new \Exception('Erreur lors de la création du média');
+            }
+
+            // Création de la vidéo
+            $video = Video::create([
+                'id_media' => $media->id,
+                'nom' => $request->nom,
+                'description' => $request->description,
+                'insert_by' => auth()->id(),
+                'update_by' => auth()->id(),
+            ]);
+
+            if (!$video) {
+                throw new \Exception('Erreur lors de la création de la vidéo');
+            }
+
+            DB::commit();
+            Alert::success('Succès', 'Vidéo créée avec succès');
+            return redirect()->route('videos.index');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Alert::error('Erreur', $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Erreur lors de la création de la vidéo: ' . $e->getMessage())
+                ->withInput();
         }
-
-        // Vérification finale
-        if (empty($filePaths)) {
-            throw new \Exception('Aucun fichier ou lien de vidéo fourni');
-        }
-
-        // Création du média
-        $media = Media::create([
-            'url_fichier' => json_encode($filePaths), // Stocker toutes les qualités
-            'type' => $type,
-            'insert_by' => auth()->id(),
-            'update_by' => auth()->id(),
-        ]);
-
-        if (!$media) {
-            throw new \Exception('Erreur lors de la création du média');
-        }
-
-        // Création de la vidéo
-        $video = Video::create([
-            'id_media' => $media->id,
-            'nom' => $request->nom,
-            'description' => $request->description,
-            'insert_by' => auth()->id(),
-            'update_by' => auth()->id(),
-        ]);
-
-        if (!$video) {
-            throw new \Exception('Erreur lors de la création de la vidéo');
-        }
-
-        DB::commit();
-        Alert::success('Succès', 'Vidéo créée avec succès');
-        return redirect()->route('videos.index');
-
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        DB::rollBack();
-        return redirect()->back()
-            ->withErrors($e->validator)
-            ->withInput();
-            
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Alert::error('Erreur', $e->getMessage());
-        return redirect()->back()
-            ->with('error', 'Erreur lors de la création de la vidéo: ' . $e->getMessage())
-            ->withInput();
     }
-}
 
-/**
- * Convertit une vidéo pour le streaming avec différentes qualités
- */
-private function convertVideoForStreaming($tempPath, $uniqueName)
-{
-    $outputPaths = [];
-    
-    try {
-        $lowBitrate = (new X264('aac'))->setKiloBitrate(500);
-        $midBitrate = (new X264('aac'))->setKiloBitrate(1000);
-        $highBitrate = (new X264('aac'))->setKiloBitrate(2500);
-        
-        // Convertir en différentes qualités
-        FFMpeg::fromDisk('local')
-            ->open($tempPath)
-            ->export()
-            ->toDisk('public')
-            ->inFormat($lowBitrate)
-            ->save("medias/videos/{$uniqueName}_360p.mp4");
-            
-        FFMpeg::fromDisk('local')
-            ->open($tempPath)
-            ->export()
-            ->toDisk('public')
-            ->inFormat($midBitrate)
-            ->save("medias/videos/{$uniqueName}_720p.mp4");
-            
-        FFMpeg::fromDisk('local')
-            ->open($tempPath)
-            ->export()
-            ->toDisk('public')
-            ->inFormat($highBitrate)
-            ->save("medias/videos/{$uniqueName}_1080p.mp4");
-            
-        $outputPaths = [
-            '360p' => "medias/videos/{$uniqueName}_360p.mp4",
-            '720p' => "medias/videos/{$uniqueName}_720p.mp4", 
-            '1080p' => "medias/videos/{$uniqueName}_1080p.mp4"
-        ];
-        
-    } catch (\Exception $e) {
-        // Fallback: si la conversion échoue, utiliser le fichier original
-        $originalFile = Storage::get($tempPath);
-        $fallbackPath = "medias/videos/{$uniqueName}.mp4";
-        Storage::disk('public')->put($fallbackPath, $originalFile);
-        
-        $outputPaths = ['original' => $fallbackPath];
+    /**
+     * Convertit une vidéo pour le streaming avec différentes qualités
+     */
+    private function reduceVideoQuality($tempPath, $uniqueName)
+    {
+        try {
+            // Format avec bas débit et résolution réduite
+            $optimizedFormat = (new X264('aac'))->setKiloBitrate(500); // 500 kbps
+
+            FFMpeg::fromDisk('local')
+                ->open($tempPath)
+                ->export()
+                ->toDisk('public')
+                ->inFormat($optimizedFormat)
+                ->addFilter('-vf', 'scale=640:360') // Réduire la résolution
+                ->addFilter('-r', '24') // Réduire le framerate
+                ->addFilter('-crf', '28') // Augmenter la compression (23 par défaut)
+                ->save("medias/videos/{$uniqueName}_optimized.mp4");
+
+            return "medias/videos/{$uniqueName}_optimized.mp4";
+        } catch (\Exception $e) {
+            // Fallback: utiliser le fichier original si la conversion échoue
+            $originalFile = Storage::get($tempPath);
+            $fallbackPath = "medias/videos/{$uniqueName}.mp4";
+            Storage::disk('public')->put($fallbackPath, $originalFile);
+
+            return $fallbackPath;
+        }
     }
-    
-    return $outputPaths;
-}
-   public function edit(Video $video)
+    public function edit(Video $video)
     {
         $video->load('media');
         return response()->json([
@@ -200,68 +191,73 @@ private function convertVideoForStreaming($tempPath, $uniqueName)
             'video_type' => 'required|in:file,link',
         ]);
 
+        // Validation conditionnelle selon le type
+        if ($request->video_type === 'file') {
+            $request->validate([
+                'fichier_video' => 'nullable|file|mimes:mp4,avi,mov,wmv,flv,mkv,webm|max:1024000',
+            ]);
+        } elseif ($request->video_type === 'link') {
+            $request->validate([
+                'lien_video' => 'required|url',
+            ]);
+        }
+
         try {
             DB::beginTransaction();
 
-            // Récupération de la vidéo
-            $video = Video::with('media')->findOrFail($id);
+            // Récupérer la vidéo existante
+            $video = Video::findOrFail($id);
             $media = $video->media;
 
-            $filePath = $media->url_fichier;
-            $type = $media->type;
+            if (!$media) {
+                throw new \Exception('Média introuvable pour cette vidéo');
+            }
 
-            // Mise à jour conditionnelle
-            if ($request->video_type === 'file') {
-                $request->validate([
-                    'fichier_video' => 'nullable|file|mimes:mp4,avi,mov,wmv,flv,mkv|max:102400',
-                ]);
+            $filePaths = $media->url_fichier;
+            $type = $request->video_type === 'file' ? 'video' : 'link';
 
-                if ($request->hasFile('fichier_video')) {
-                    $file = $request->file('fichier_video');
+            // Si fichier uploadé
+            if ($request->video_type === 'file' && $request->hasFile('fichier_video')) {
+                $file = $request->file('fichier_video');
 
-                    if (!$file->isValid()) {
-                        throw new \Exception('Fichier vidéo invalide');
-                    }
-
-                    // Suppression de l'ancien fichier si c'était un fichier
-                    if ($type === 'video' && Storage::disk('public')->exists($filePath)) {
-                        Storage::disk('public')->delete($filePath);
-                    }
-
-                    $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                    $extension = $file->getClientOriginalExtension();
-                    $uniqueName = $originalName . '_' . now()->format('Ymd_His') . '.' . $extension;
-
-                    $filePath = $file->storeAs('medias/videos', $uniqueName, 'public');
-                    $type = 'video';
+                if (!$file->isValid()) {
+                    throw new \Exception('Fichier vidéo invalide');
                 }
 
+                // Supprimer l’ancien fichier
+                if ($media->type === 'video' && Storage::exists($media->url_fichier)) {
+                    Storage::delete($media->url_fichier);
+                }
+
+                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                $uniqueName = $originalName . '_' . now()->format('Ymd_His');
+
+                // Stocker temporairement
+                $tempPath = $file->storeAs('temp/videos', $uniqueName . '_original.' . $file->getClientOriginalExtension());
+
+                // Conversion qualité réduite
+                $filePath = $this->reduceVideoQuality($tempPath, $uniqueName);
+
+                // Supprimer le temporaire
+                Storage::delete($tempPath);
+
+                $filePaths = $filePath;
             } elseif ($request->video_type === 'link') {
-                $request->validate([
-                    'lien_video' => 'required|url',
-                ]);
+                $filePaths = $request->lien_video;
 
-                $filePath = $request->lien_video;
-                $type = 'link';
-
-                if (!filter_var($filePath, FILTER_VALIDATE_URL)) {
+                if (!filter_var($filePaths, FILTER_VALIDATE_URL)) {
                     throw new \Exception('URL de vidéo invalide');
-                }
-
-                // Suppression de l'ancien fichier si avant c'était un fichier
-                if ($media->type === 'video' && Storage::disk('public')->exists($media->url_fichier)) {
-                    Storage::disk('public')->delete($media->url_fichier);
                 }
             }
 
             // Vérification finale
-            if (empty($filePath)) {
+            if (empty($filePaths)) {
                 throw new \Exception('Aucun fichier ou lien de vidéo fourni');
             }
 
             // Mise à jour du média
             $media->update([
-                'url_fichier' => $filePath,
+                'url_fichier' => $filePaths,
                 'type' => $type,
                 'update_by' => auth()->id(),
             ]);
@@ -276,13 +272,11 @@ private function convertVideoForStreaming($tempPath, $uniqueName)
             DB::commit();
             Alert::success('Succès', 'Vidéo mise à jour avec succès');
             return redirect()->route('videos.index');
-
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             return redirect()->back()
                 ->withErrors($e->validator)
                 ->withInput();
-
         } catch (\Exception $e) {
             DB::rollBack();
             Alert::error('Erreur', $e->getMessage());
@@ -293,8 +287,10 @@ private function convertVideoForStreaming($tempPath, $uniqueName)
     }
 
 
-    public function destroy(Video $video)
+
+    public function destroy($id)
     {
+        $video = Video::findOrFail($id);
         try {
             DB::beginTransaction();
 
@@ -312,13 +308,10 @@ private function convertVideoForStreaming($tempPath, $uniqueName)
             }
 
             DB::commit();
-
-            return redirect()->route('videos.index')
-                ->with('success', 'Vidéo supprimée avec succès');
-
+            Alert::success('Succès', 'Vidéo supprimée avec succès');
+            return redirect()->route('videos.index');
         } catch (\Exception $e) {
             DB::rollBack();
-            
             return redirect()->back()
                 ->with('error', 'Erreur lors de la suppression: ' . $e->getMessage());
         }

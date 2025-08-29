@@ -9,7 +9,7 @@ class Podcast extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['id_media', 'titre', 'animateur', 'duree', 'insert_by', 'update_by', 'is_deleted'];
+    protected $fillable = ['id_media', 'titre', 'description', 'insert_by', 'update_by', 'is_deleted'];
 
     // Relations
     public function media()

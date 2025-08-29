@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Video extends Model
 {
@@ -32,8 +33,4 @@ class Video extends Model
         return $this->hasMany(PlaylistItem::class, 'id_video');
     }
 
-    public function infoBulles()
-    {
-        return $this->hasMany(InfoBulle::class, 'id_video');
-    }
 }

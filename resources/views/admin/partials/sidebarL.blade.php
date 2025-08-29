@@ -37,23 +37,13 @@
             </li>
 
             <!-- Section Programmation -->
-            <li class="menu-header">Programmation</li>
+            <li class="menu-header">Programmation et Contenu</li>
 
             <li class="{{ Route::is('playlists.*') ? 'active' : '' }}">
                 <a href="{{ route('playlists.index') }}" class="nav-link">
                     <i data-feather="list"></i><span>Playlists</span>
                 </a>
             </li>
-
-            <li class="{{ Route::is('playlist-items.*') ? 'active' : '' }}">
-                <a href="{{ route('playlist-items.index') }}" class="nav-link">
-                    <i data-feather="play-circle"></i><span>Éléments de playlist</span>
-                </a>
-            </li>
-
-            <!-- Section Contenu informatif -->
-            <li class="menu-header">Contenu informatif</li>
-
             <li class="{{ Route::is('info-bulles.*') ? 'active' : '' }}">
                 <a href="{{ route('info-bulles.index') }}" class="nav-link">
                     <i data-feather="info"></i><span>Info-bulles</span>

@@ -169,6 +169,7 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         RealRashid\SweetAlert\SweetAlertServiceProvider::class,
+        // Pbmedia\LaravelFFMpeg\FFMpegServiceProvider::class,
     ])->toArray(),
 
     /*
@@ -183,7 +184,6 @@ return [
     */
 
     'aliases' => Facade::defaultAliases()->merge([
-        // 'Example' => App\Facades\Example::class,
     ])->toArray(),
 
 ];

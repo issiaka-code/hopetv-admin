@@ -40,9 +40,4 @@ class Media extends Model
         return $this->hasOne(Temoignage::class, 'id_media');
     }
 
-    public function getVideoUrl($quality = '720p')
-    {
-        $urls = json_decode($this->url_fichier, true);
-        return $urls[$quality] ?? $urls['original'] ?? null;
-    }
 }

@@ -42,7 +42,7 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-     // Relations
+    // Relations
     public function mediasInserted()
     {
         return $this->hasMany(Media::class, 'insert_by');
@@ -127,5 +127,15 @@ class User extends Authenticatable
     {
         return $this->hasMany(LienUtile::class, 'update_by');
     }
- 
+
+    // App/Models/Video.php
+    public function scopeSearch($query, $term)
+    {
+        if (!empty($term)) {
+            $query->where(function ($q) use ($term) {
+                $q->where('nom', 'LIKE', "%{$term}%")
+                    ->orWhere('description', 'LIKE', "%{$term}%");
+            });
+        }
+    }
 }
