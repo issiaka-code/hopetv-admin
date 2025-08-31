@@ -37,9 +37,14 @@ class LienUtileController extends Controller
     {
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
-            'lien' => 'required',
+            'lien' => 'required|url',
         ]);
-
+        if (LienUtile::where('slug', str_replace(' ','', $validated['lien']))->orWhere('lien', $validated['lien'])->exists()) {
+            notify()->error('Erreur', 'Le lien existe deja.');
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Le lien existe deja.');
+        }
         try {
             LienUtile::create([
                 'nom' => $validated['nom'],
@@ -67,9 +72,14 @@ class LienUtileController extends Controller
         
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
-            'lien' => 'required|max:500',
+            'lien' => 'required|url',
         ]);
-
+        if (LienUtile::where('slug', str_replace(' ','', $validated['lien']))->orWhere('lien', $validated['lien'])->exists()) {
+            notify()->error('Erreur', 'Le lien existe deja.');
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Le lien existe deja.');
+        }
         try {
             $lien->update([
                 'nom' => $validated['nom'],
