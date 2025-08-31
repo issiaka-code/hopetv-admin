@@ -771,9 +771,6 @@
                     <button type="button" class="btn btn-secondary bg-secondary" data-dismiss="modal">
                         <i class="fas fa-times"></i> Fermer
                     </button>
-                    <button type="button" class="btn btn-primary" id="backToEditBtn">
-                        <i class="fas fa-edit"></i> Modifier la playlist
-                    </button>
                 </div>
             </div>
         </div>
