@@ -58,7 +58,7 @@ class VideoController extends Controller
                     $thumbnailUrl = $rawUrl;
                 }
             } elseif ($isVideoFile) {
-                $thumbnailUrl = c;
+                $thumbnailUrl = asset('storage/' . $video->media->url_fichier);
             }
 
             return (object)[
