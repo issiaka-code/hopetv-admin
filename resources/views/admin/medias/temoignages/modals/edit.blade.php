@@ -141,7 +141,7 @@
 
                             <div id="editCurrentPdf" class="mt-2">
                                 <small>Fichier actuel: <span id="editCurrentPdfName"></span></small>
-                                <a href="#" target="_blank" class="btn btn-sm btn-info ml-2" id="editViewCurrentPdf">
+                                <a href="javascript:void(0);" target="_blank" class="btn btn-sm btn-info ml-2" id="editViewCurrentPdf">
                                     <i class="fa fa-eye"></i> Voir
                                 </a>
                             </div>
@@ -150,7 +150,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary bg-secondary" data-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-info">
+                    <button type="submit" class="btn btn-info bg-info">
                         <i class="fas fa-save"></i> Mettre à jour
                     </button>
                 </div>
