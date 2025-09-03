@@ -157,12 +157,9 @@ class PlaylistController extends Controller
     {
         $playlist = Playlist::notDeleted()
             ->with([
-                'user',
-                'insertedBy',
-                'updatedBy',
                 'items' => function ($query) {
                     $query->notDeleted()
-                        ->with('video')
+                        ->with('video', 'video.media')
                         ->orderBy('created_at', 'asc');
                 }
             ])

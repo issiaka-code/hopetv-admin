@@ -10,6 +10,7 @@ use App\Http\Controllers\ParametreController;
 use App\Http\Controllers\TemoignageController;
 use App\Http\Controllers\PlaylistItemController;
 use App\Http\Controllers\Auth\AuthViewController;
+use App\Http\Controllers\InfoImportanteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -45,6 +46,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('parametres', ParametreController::class);
     Route::resource('liens-utiles', LienUtileController::class);
     Route::patch('/{id}/toggle-status', [InfoBulleController::class, 'toggleStatus'])->name('info-bulles.toggle-status');
+    Route::resource('info_importantes', InfoImportanteController::class);
+    Route::post('info_importantes/{id}/toggle_status', [InfoImportanteController::class, 'toggleStatus'])
+        ->name('info_importantes.toggle_status');
 });
 
 require __DIR__ . '/auth.php';

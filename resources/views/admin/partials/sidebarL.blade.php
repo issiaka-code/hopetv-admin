@@ -54,7 +54,11 @@
                     <li><a class="nav-link {{ Route::is('playlists.create') ? 'active' : '' }}"" href="{{ route('playlists.create') }}">Créer une playlist</a></li>
                 </ul>
             </li>
-
+            <li class="{{ Route::is('info_importantes.*') ? 'active' : '' }}">
+                <a href="{{ route('info_importantes.index') }}" class="nav-link">
+                    <i data-feather="alert-circle"></i><span>Infos importantes</span>
+                </a>
+            </li>
             <li class="{{ Route::is('info-bulles.*') ? 'active' : '' }}">
                 <a href="{{ route('info-bulles.index') }}" class="nav-link">
                     <i data-feather="info"></i><span>Info-bulles</span>
