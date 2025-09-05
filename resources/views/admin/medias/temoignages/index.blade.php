@@ -384,8 +384,10 @@
                                     <div class="temoignage-thumbnail-container">
                                         <div class="temoignage-thumbnail position-relative"
                                             data-temoignage-url="{{ $thumbnail_url }}"
+                                            data-video-url="{{ $temoignage->video_url }}"
                                             data-temoignage-name="{{ $nom }}"
-                                            data-media-type="{{ $media_type }}">
+                                            data-media-type="{{ $media_type }}"
+                                            data-has-thumbnail="{{ $temoignage->has_thumbnail ? 'true' : 'false' }}">
 
                                             @if ($media_type === 'audio')
                                                 <div class="audio-thumbnail"><i class="fas fa-music"></i></div>
@@ -394,6 +396,12 @@
                                                     allowfullscreen></iframe>
                                             @elseif ($media_type === 'pdf')
                                                 <div class="pdf-thumbnail"><i class="fas fa-file-pdf"></i></div>
+                                            @elseif ($media_type === 'video_file')
+                                                @if ($temoignage->has_thumbnail)
+                                                    <img src="{{ $thumbnail_url }}" alt="{{ $nom }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                                @else
+                                                    <video src="{{ $temoignage->video_url }}"></video>
+                                                @endif
                                             @else
                                                 <video src="{{ $thumbnail_url }}"></video>
                                             @endif
@@ -506,7 +514,7 @@
                 }
             });
 
-            $('#addAudioFile, #addVideoFile, #addPdfFile').on('change', function() {
+            $('#addAudioFile, #addVideoFile, #addPdfFile, #addTemoignageThumbnail').on('change', function() {
                 let fileName = $(this).val().split('\\').pop();
                 $(this).next('.custom-file-label').addClass("selected").html(fileName);
             });
@@ -515,6 +523,7 @@
                 $('#addTemoignageForm')[0].reset();
                 $('#addAudioFile, #addVideoFile, #addPdfFile').next('.custom-file-label').html(
                     'Choisir un fichier');
+                $('#addTemoignageThumbnail').next('.custom-file-label').html('Choisir une image');
                 $('#addMediaTypeAudio').prop('checked', true).trigger('change');
             });
 
@@ -537,7 +546,7 @@
                 }
             });
 
-            $('#editAudioFile, #editVideoFile, #editPdfFile').on('change', function() {
+            $('#editAudioFile, #editVideoFile, #editPdfFile, #editTemoignageThumbnail').on('change', function() {
                 let fileName = $(this).val().split('\\').pop();
                 $(this).next('.custom-file-label').addClass("selected").html(fileName ||
                     'Choisir un nouveau fichier');
@@ -573,6 +582,16 @@
                                 $('#editCurrentVideo').show();
                                 $('#editCurrentAudio, #editCurrentLink, #editCurrentPdf')
                             .hide();
+                                
+                                // Gestion de l'image de couverture
+                                if (data.media.thumbnail) {
+                                    const thumbnailName = data.media.thumbnail.split('/').pop();
+                                    $('#editCurrentThumbnailName').text(thumbnailName);
+                                    $('#editCurrentThumbnailPreview').attr('src', '/storage/' + data.media.thumbnail).show();
+                                    $('#editCurrentThumbnail').show();
+                                } else {
+                                    $('#editCurrentThumbnail').hide();
+                                }
                             } else if (mediaType === 'link') {
                                 $('#editMediaTypeVideoLink').prop('checked', true).trigger(
                                     'change');
@@ -626,7 +645,9 @@
                     $('#iframePlayerContainer').removeClass('d-none');
                     $('#mediaTypeBadge').text('Vidéo en ligne').removeClass('d-none');
                 } else if (mediaType === 'video_file') {
-                    $('#modalVideoPlayer').attr('src', temoignageUrl).get(0).load();
+                    // Utiliser l'URL de la vidéo pour la lecture
+                    const videoUrl = $(this).data('video-url') || temoignageUrl;
+                    $('#modalVideoPlayer').attr('src', videoUrl).get(0).load();
                     $('#videoPlayerContainer').removeClass('d-none');
                     $('#mediaTypeBadge').text('Vidéo locale').removeClass('d-none');
                 } else if (mediaType === 'pdf') {

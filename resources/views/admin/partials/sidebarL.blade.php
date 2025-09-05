@@ -56,7 +56,7 @@
             </li>
             <li class="{{ Route::is('info_importantes.*') ? 'active' : '' }}">
                 <a href="{{ route('info_importantes.index') }}" class="nav-link">
-                    <i data-feather="alert-circle"></i><span>Infos importantes</span>
+                    <i data-feather="star"></i><span>Directes</span>
                 </a>
             </li>
             <li class="{{ Route::is('info-bulles.*') ? 'active' : '' }}">

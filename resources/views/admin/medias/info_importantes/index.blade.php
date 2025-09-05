@@ -381,18 +381,24 @@
                                     <div class="info-thumbnail-container">
                                         <div class="info-thumbnail position-relative"
                                             data-info-url="{{ $info->thumbnail_url }}"
+                                            data-video-url="{{ $info->video_url }}"
                                             data-info-name="{{ $info->nom }}"
-                                            data-media-type="{{ $info->media_type }}">
+                                            data-media-type="{{ $info->media_type }}"
+                                            data-has-thumbnail="{{ $info->has_thumbnail ? 'true' : 'false' }}">
 
                                             @if ($info->media_type === 'audio')
                                                 <div class="audio-thumbnail">
                                                     <i class="fas fa-music"></i>
                                                 </div>
                                             @elseif ($info->media_type === 'video')
-                                                <video src="{{ $info->thumbnail_url }}" controls
-                                                    style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
-                                                    <i class="fas fa-video" style="font-size: 3rem; color: #4e73df;"></i>
-                                                </video>
+                                                @if ($info->has_thumbnail)
+                                                    <img src="{{ $info->thumbnail_url }}" alt="{{ $info->nom }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                                @else
+                                                    <video src="{{ $info->video_url }}" controls
+                                                        style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
+                                                        <i class="fas fa-video" style="font-size: 3rem; color: #4e73df;"></i>
+                                                    </video>
+                                                @endif
                                             @endif
 
                                             <div class="thumbnail-overlay">
@@ -505,7 +511,7 @@
                 }
             });
 
-            $('#addAudioFile, #addVideoFile').on('change', function() {
+            $('#addAudioFile, #addVideoFile, #addInfoThumbnail').on('change', function() {
                 let fileName = $(this).val().split('\\').pop();
                 $(this).next('.custom-file-label').addClass("selected").html(fileName);
             });
@@ -513,6 +519,7 @@
             $('#addInfoModal').on('hidden.bs.modal', function() {
                 $('#addInfoForm')[0].reset();
                 $('#addAudioFile, #addVideoFile').next('.custom-file-label').html('Choisir un fichier');
+                $('#addInfoThumbnail').next('.custom-file-label').html('Choisir une image');
                 $('#addMediaTypeAudio').prop('checked', true).trigger('change');
             });
 
@@ -529,7 +536,7 @@
                 }
             });
 
-            $('#editAudioFile, #editVideoFile').on('change', function() {
+            $('#editAudioFile, #editVideoFile, #editInfoThumbnail').on('change', function() {
                 let fileName = $(this).val().split('\\').pop();
                 $(this).next('.custom-file-label').addClass("selected").html(fileName ||
                     'Choisir un nouveau fichier');
@@ -564,6 +571,16 @@
                                     '/').pop());
                                 $('#editCurrentVideo').show();
                                 $('#editCurrentAudio').hide();
+                                
+                                // Gestion de l'image de couverture
+                                if (data.media.thumbnail) {
+                                    const thumbnailName = data.media.thumbnail.split('/').pop();
+                                    $('#editCurrentThumbnailName').text(thumbnailName);
+                                    $('#editCurrentThumbnailPreview').attr('src', '/storage/' + data.media.thumbnail).show();
+                                    $('#editCurrentThumbnail').show();
+                                } else {
+                                    $('#editCurrentThumbnail').hide();
+                                }
                             }
                         }
                         $('#editInfoModal').modal('show');
@@ -615,7 +632,9 @@
                     $('#audioPlayerContainer').removeClass('d-none');
                     $('#mediaTypeBadge').text('Audio').removeClass('d-none');
                 } else if (mediaType === 'video') {
-                    $('#modalVideoPlayer').attr('src', infoUrl).get(0).load();
+                    // Utiliser l'URL de la vidéo pour la lecture
+                    const videoUrl = $(this).data('video-url') || infoUrl;
+                    $('#modalVideoPlayer').attr('src', videoUrl).get(0).load();
                     $('#videoPlayerContainer').removeClass('d-none');
                     $('#mediaTypeBadge').text('Vidéo').removeClass('d-none');
                 }

@@ -58,7 +58,13 @@ class VideoController extends Controller
                     $thumbnailUrl = $rawUrl;
                 }
             } elseif ($isVideoFile) {
-                $thumbnailUrl = asset('storage/' . $video->media->url_fichier);
+                // Pour les vidéos fichiers, utiliser l'image de couverture si elle existe
+                if ($video->media->thumbnail) {
+                    $thumbnailUrl = asset('storage/' . $video->media->thumbnail);
+                } else {
+                    // Fallback sur la vidéo si pas d'image de couverture
+                    $thumbnailUrl = asset('storage/' . $video->media->url_fichier);
+                }
             }
 
             return (object)[
@@ -68,6 +74,8 @@ class VideoController extends Controller
                 'created_at' => $video->created_at,
                 'media_type' => $isVideoLink ? 'video_link' : 'video_file',
                 'thumbnail_url' => $thumbnailUrl,
+                'video_url' => $isVideoFile ? asset('storage/' . $video->media->url_fichier) : $thumbnailUrl,
+                'has_thumbnail' => $isVideoFile && $video->media->thumbnail ? true : false,
             ];
         });
 
@@ -83,12 +91,14 @@ class VideoController extends Controller
                 'nom' => 'required|string|max:255',
                 'description' => 'required|string',
                 'video_type' => 'required|in:file,link',
+                'image_couverture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
             try {
                 if ($request->video_type === 'file') {
                     $request->validate([
                         'fichier_video' => 'required|file|mimes:mp4,avi,mov,wmv,flv,mkv,webm|max:1024000',
+                        'image_couverture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                     ]);
 
                     $file = $request->file('fichier_video');
@@ -111,6 +121,15 @@ class VideoController extends Controller
                     Storage::disk('local')->delete($tempPath);
 
                     $filePath = 'videos/' . $uniqueName;
+
+                    // Traitement de l'image de couverture
+                    $thumbnailPath = null;
+                    if ($request->hasFile('image_couverture')) {
+                        $thumbnailFile = $request->file('image_couverture');
+                        $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                        $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                        $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
+                    }
                 } elseif ($request->video_type === 'link') {
                     $request->validate([
                         'lien_video' => 'required|url',
@@ -124,6 +143,7 @@ class VideoController extends Controller
                 // Créer l'enregistrement média
                 $media = Media::create([
                     'url_fichier' => $filePath,
+                    'thumbnail' => $thumbnailPath,
                     'type' => $type,
                     'insert_by' => auth()->id(),
                     'update_by' => auth()->id(),
@@ -162,6 +182,7 @@ class VideoController extends Controller
             'nom' => 'required|string|max:255',
             'description' => 'required|string',
             'video_type' => 'required|in:file,link',
+            'image_couverture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         try {
@@ -176,6 +197,7 @@ class VideoController extends Controller
             }
 
             $filePath = $media->url_fichier; // par défaut, garder l'ancien fichier
+            $thumbnailPath = $media->thumbnail; // par défaut, garder l'ancienne image
             $type = $media->type;
 
             if ($request->video_type === 'file') {
@@ -210,6 +232,19 @@ class VideoController extends Controller
                     $filePath = 'videos/' . $uniqueName;
                     $type = 'video';
                 }
+
+                // Traitement de l'image de couverture pour les vidéos fichiers
+                if ($request->video_type === 'file' && $request->hasFile('image_couverture')) {
+                    // Supprimer l'ancienne image de couverture
+                    if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
+                        Storage::disk('public')->delete($media->thumbnail);
+                    }
+
+                    $thumbnailFile = $request->file('image_couverture');
+                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
+                }
             } elseif ($request->video_type === 'link') {
                 $request->validate([
                     'lien_video' => 'required|url',
@@ -222,6 +257,7 @@ class VideoController extends Controller
             // Mise à jour du média
             $media->update([
                 'url_fichier' => $filePath,
+                'thumbnail' => $thumbnailPath,
                 'type' => $type,
                 'update_by' => auth()->id(),
             ]);

@@ -343,16 +343,22 @@
                                     <!-- Miniature -->
                                     <div class="video-thumbnail-container">
                                         <div class="video-thumbnail position-relative"
-                                            data-video-url="{{ $video->thumbnail_url }}"
+                                            data-video-url="{{ $video->media_type === 'video_file' ? $video->video_url : $video->thumbnail_url }}"
+                                            data-thumbnail-url="{{ $video->thumbnail_url }}"
                                             data-video-name="{{ $video->nom }}" data-media-type="{{ $video->media_type }}"
-                                            data-is-link="{{ $video->media_type === 'video_link' ? 'true' : 'false' }}">
+                                            data-is-link="{{ $video->media_type === 'video_link' ? 'true' : 'false' }}"
+                                            data-has-thumbnail="{{ $video->has_thumbnail ? 'true' : 'false' }}">
 
 
                                             @if ($video->media_type === 'video_link')
                                                 <iframe src="{{ $video->thumbnail_url }}" class="w-100 h-100"
                                                     frameborder="0" allowfullscreen></iframe>
                                             @else
-                                                <video src="{{ $video->thumbnail_url }}"></video>
+                                                @if ($video->has_thumbnail)
+                                                    <img src="{{ $video->thumbnail_url }}" alt="{{ $video->nom }}" class="w-100 h-100">
+                                                @else
+                                                    <video src="{{ $video->video_url }}"></video>
+                                                @endif
                                             @endif
 
                                             <div class="thumbnail-overlay">
@@ -466,10 +472,17 @@
                 $(this).next('.custom-file-label').addClass("selected").html(fileName);
             });
 
+            // Gestion de l'image de couverture pour l'ajout
+            $('#addVideoThumbnail').on('change', function() {
+                let fileName = $(this).val().split('\\').pop();
+                $(this).next('.custom-file-label').addClass("selected").html(fileName);
+            });
+
             // Réinitialiser le formulaire d'ajout à la fermeture
             $('#addVideoModal').on('hidden.bs.modal', function() {
                 $('#addVideoForm')[0].reset();
                 $('#addVideoFichier').next('.custom-file-label').html('Choisir un fichier');
+                $('#addVideoThumbnail').next('.custom-file-label').html('Choisir une image');
                 $('#addVideoTypeFile').prop('checked', true).trigger('change');
             });
 
@@ -493,6 +506,13 @@
                 let fileName = $(this).val().split('\\').pop();
                 $(this).next('.custom-file-label').addClass("selected").html(fileName ||
                     'Choisir un nouveau fichier');
+            });
+
+            // Gestion de l'image de couverture pour l'édition
+            $('#editVideoThumbnail').on('change', function() {
+                let fileName = $(this).val().split('\\').pop();
+                $(this).next('.custom-file-label').addClass("selected").html(fileName ||
+                    'Choisir une nouvelle image');
             });
 
             // Ouvrir le modal d'édition et charger les données
@@ -526,6 +546,7 @@
                                 $('#editViewCurrentLink').attr('href', data.media.url_fichier);
                                 $('#editCurrentLink').show();
                                 $('#editCurrentVideo').hide();
+                                $('#editCurrentThumbnail').hide();
                             } else {
                                 // C'est un fichier
                                 $('#editVideoTypeFile').prop('checked', true);
@@ -539,6 +560,16 @@
                                     .media.url_fichier);
                                 $('#editCurrentVideo').show();
                                 $('#editCurrentLink').hide();
+                                
+                                // Gestion de l'image de couverture
+                                if (data.media.thumbnail) {
+                                    const thumbnailName = data.media.thumbnail.split('/').pop();
+                                    $('#editCurrentThumbnailName').text(thumbnailName);
+                                    $('#editCurrentThumbnailPreview').attr('src', '/storage/' + data.media.thumbnail).show();
+                                    $('#editCurrentThumbnail').show();
+                                } else {
+                                    $('#editCurrentThumbnail').hide();
+                                }
                             }
                         }
 
@@ -564,6 +595,7 @@
                 const videoUrl = $(this).data('video-url');
                 const videoName = $(this).data('video-name');
                 const isLink = $(this).data('is-link') === 'true' || $(this).data('is-link') === true;
+                const hasThumbnail = $(this).data('has-thumbnail') === 'true' || $(this).data('has-thumbnail') === true;
                 const videoDescription = $(this).closest('.video-card').find('.card-text').attr('title') ||
                     '';
 
@@ -582,7 +614,6 @@
                     $('#videoPlayerContainer').removeClass('d-none');
                     $('#mediaTypeBadge').text('Fichier local');
                 }
-
 
                 // Infos vidéo
                 $('#videoTitle').text(videoName);

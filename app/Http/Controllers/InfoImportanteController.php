@@ -49,7 +49,14 @@ class InfoImportanteController extends Controller
 
             $thumbnailUrl = null;
 
-            if ($isVideo || $isAudio) {
+            if ($isVideo) {
+                // Pour les vidéos, utiliser l'image de couverture si disponible
+                if ($info->media->thumbnail) {
+                    $thumbnailUrl = asset('storage/' . $info->media->thumbnail);
+                } else {
+                    $thumbnailUrl = asset('storage/' . $info->media->url_fichier);
+                }
+            } elseif ($isAudio) {
                 $thumbnailUrl = asset('storage/' . $info->media->url_fichier);
             }
 
@@ -61,6 +68,8 @@ class InfoImportanteController extends Controller
                 'created_at' => $info->created_at,
                 'media_type' => $isAudio ? 'audio' : 'video',
                 'thumbnail_url' => $thumbnailUrl,
+                'video_url' => $isVideo ? asset('storage/' . $info->media->url_fichier) : $thumbnailUrl,
+                'has_thumbnail' => $isVideo && $info->media->thumbnail ? true : false,
             ];
         });
 
@@ -77,6 +86,7 @@ class InfoImportanteController extends Controller
             'description' => 'required|string',
             'media_type' => 'required|in:audio,video',
             'is_active' => 'boolean',
+            'image_couverture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
         try {
             DB::beginTransaction();
@@ -96,6 +106,7 @@ class InfoImportanteController extends Controller
             } elseif ($request->media_type === 'video') {
                 $request->validate([
                     'fichier_video' => 'required|file|mimes:mp4,avi,mov,wmv,flv,mkv,webm|max:1024000',
+                    'image_couverture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                 ]);
 
                 $file = $request->file('fichier_video');
@@ -121,9 +132,19 @@ class InfoImportanteController extends Controller
                 $type = 'video';
             }
 
+            // Traitement de l'image de couverture pour les vidéos
+            $thumbnailPath = null;
+            if ($request->media_type === 'video' && $request->hasFile('image_couverture')) {
+                $thumbnailFile = $request->file('image_couverture');
+                $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
+            }
+
             // Créer l'enregistrement média
             $media = Media::create([
                 'url_fichier' => $filePath,
+                'thumbnail' => $thumbnailPath,
                 'type' => $type,
                 'insert_by' => auth()->id(),
                 'update_by' => auth()->id(),
@@ -168,6 +189,7 @@ class InfoImportanteController extends Controller
             'nom' => 'required|string|max:255',
             'description' => 'required|string',
             'media_type' => 'required|in:audio,video',
+            'image_couverture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         try {
@@ -182,6 +204,7 @@ class InfoImportanteController extends Controller
             }
 
             $filePath = $media->url_fichier; // par défaut, garder l'ancien fichier
+            $thumbnailPath = $media->thumbnail; // par défaut, garder l'ancienne image
             $type = $media->type;
 
             if ($request->media_type === 'audio') {
@@ -236,11 +259,25 @@ class InfoImportanteController extends Controller
                     $filePath = 'info_importantes/videos/' . $uniqueName;
                     $type = 'video';
                 }
+
+                // Traitement de l'image de couverture pour les vidéos
+                if ($request->media_type === 'video' && $request->hasFile('image_couverture')) {
+                    // Supprimer l'ancienne image de couverture
+                    if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
+                        Storage::disk('public')->delete($media->thumbnail);
+                    }
+
+                    $thumbnailFile = $request->file('image_couverture');
+                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
+                }
             }
 
             // Mise à jour du média
             $media->update([
                 'url_fichier' => $filePath,
+                'thumbnail' => $thumbnailPath,
                 'type' => $type,
                 'update_by' => auth()->id(),
             ]);

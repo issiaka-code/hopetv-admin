@@ -368,8 +368,10 @@
                                     <div class="podcast-thumbnail-container">
                                         <div class="podcast-thumbnail position-relative"
                                             data-podcast-url="{{ $podcast->thumbnail_url }}"
+                                            data-video-url="{{ $podcast->video_url }}"
                                             data-podcast-name="{{ $podcast->nom }}"
-                                            data-media-type="{{ $podcast->media_type }}">
+                                            data-media-type="{{ $podcast->media_type }}"
+                                            data-has-thumbnail="{{ $podcast->has_thumbnail ? 'true' : 'false' }}">
 
                                             @if ($podcast->media_type === 'audio')
                                                 <div class="audio-thumbnail">
@@ -381,11 +383,14 @@
                                                     allowfullscreen>
                                                 </iframe>
                                             @elseif ($podcast->media_type === 'video_file')
-                                                <!-- Pour les vidéos locales, utiliser une prévisualisation -->
-                                                <video src="{{ $podcast->thumbnail_url }}" controls
-                                                    style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
-                                                    <i class="fas fa-video" style="font-size: 3rem; color: #4e73df;"></i>
-                                                </video>
+                                                @if ($podcast->has_thumbnail)
+                                                    <img src="{{ $podcast->thumbnail_url }}" alt="{{ $podcast->nom }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                                @else
+                                                    <video src="{{ $podcast->video_url }}" controls
+                                                        style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
+                                                        <i class="fas fa-video" style="font-size: 3rem; color: #4e73df;"></i>
+                                                    </video>
+                                                @endif
                                             @endif
 
                                             <div class="thumbnail-overlay">
@@ -420,10 +425,12 @@
                                             <div class="btn-group">
                                                 <button class="btn btn-sm btn-outline-info view-podcast-btn rounded"
                                                     data-podcast-url="{{ $podcast->thumbnail_url }}"
+                                                    data-video-url="{{ $podcast->video_url }}"
                                                     data-podcast-name="{{ $podcast->nom }}"
                                                     data-title="{{ $podcast->nom }}"
                                                     data-description="{{ $podcast->description }}"
-                                                    data-media-type="{{ $podcast->media_type }}">
+                                                    data-media-type="{{ $podcast->media_type }}"
+                                                    data-has-thumbnail="{{ $podcast->has_thumbnail ? 'true' : 'false' }}">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                                 <button class="btn btn-sm btn-outline-primary edit-podcast-btn mx-1 rounded"
@@ -492,7 +499,7 @@
                 }
             });
 
-            $('#addAudioFile, #addVideoFile').on('change', function() {
+            $('#addAudioFile, #addVideoFile, #addPodcastThumbnail').on('change', function() {
                 let fileName = $(this).val().split('\\').pop();
                 $(this).next('.custom-file-label').addClass("selected").html(fileName);
             });
@@ -500,6 +507,7 @@
             $('#addPodcastModal').on('hidden.bs.modal', function() {
                 $('#addPodcastForm')[0].reset();
                 $('#addAudioFile, #addVideoFile').next('.custom-file-label').html('Choisir un fichier');
+                $('#addPodcastThumbnail').next('.custom-file-label').html('Choisir une image');
                 $('#addMediaTypeAudio').prop('checked', true).trigger('change');
             });
 
@@ -519,7 +527,7 @@
                 }
             });
 
-            $('#editAudioFile, #editVideoFile').on('change', function() {
+            $('#editAudioFile, #editVideoFile, #editPodcastThumbnail').on('change', function() {
                 let fileName = $(this).val().split('\\').pop();
                 $(this).next('.custom-file-label').addClass("selected").html(fileName ||
                     'Choisir un nouveau fichier');
@@ -553,6 +561,16 @@
                                     '/').pop());
                                 $('#editCurrentVideo').show();
                                 $('#editCurrentAudio, #editCurrentLink').hide();
+                                
+                                // Gestion de l'image de couverture
+                                if (data.media.thumbnail) {
+                                    const thumbnailName = data.media.thumbnail.split('/').pop();
+                                    $('#editCurrentThumbnailName').text(thumbnailName);
+                                    $('#editCurrentThumbnailPreview').attr('src', '/storage/' + data.media.thumbnail).show();
+                                    $('#editCurrentThumbnail').show();
+                                } else {
+                                    $('#editCurrentThumbnail').hide();
+                                }
                             } else if (mediaType === 'link') {
                                 $('#editMediaTypeVideoLink').prop('checked', true).trigger(
                                     'change');
@@ -595,7 +613,9 @@
                     $('#iframePlayerContainer').removeClass('d-none');
                     $('#mediaTypeBadge').text('Vidéo en ligne').removeClass('d-none');
                 } else if (mediaType === 'video_file') {
-                    $('#modalVideoPlayer').attr('src', podcastUrl).get(0).load();
+                    // Utiliser l'URL de la vidéo pour la lecture
+                    const videoUrl = $(this).data('video-url') || podcastUrl;
+                    $('#modalVideoPlayer').attr('src', videoUrl).get(0).load();
                     $('#videoPlayerContainer').removeClass('d-none');
                     $('#mediaTypeBadge').text('Vidéo locale').removeClass('d-none');
                 }
