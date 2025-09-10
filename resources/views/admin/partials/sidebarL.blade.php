@@ -41,6 +41,11 @@
                     <i data-feather="message-square"></i><span>Témoignages</span>
                 </a>
             </li>
+            <li class="{{ Route::is('emissions.*') ? 'active' : '' }}">
+                <a href="{{ route('emissions.index') }}" class="nav-link">
+                    <i data-feather="radio"></i><span>Nos émissions</span>
+                </a>
+            </li>
 
             <!-- Section Programmation -->
             <li class="menu-header">Programmation et Contenu</li>

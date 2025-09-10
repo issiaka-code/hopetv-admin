@@ -11,6 +11,7 @@ use App\Http\Controllers\TemoignageController;
 use App\Http\Controllers\PlaylistItemController;
 use App\Http\Controllers\Auth\AuthViewController;
 use App\Http\Controllers\InfoImportanteController;
+use App\Http\Controllers\EmissionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,6 +41,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('videos', VideoController::class);
     Route::resource('podcasts', PodcastController::class);
     Route::resource('temoignages', TemoignageController::class);
+    Route::resource('emissions', EmissionController::class);
+    Route::post('emissions/{id}/toggle_status', [EmissionController::class, 'toggleStatus'])
+        ->name('emissions.toggle_status');
     Route::resource('playlists', PlaylistController::class)->except(['show']);
     Route::get('playlists/{id}/show', [PlaylistController::class, 'show'])->name('playlists.show');
     Route::resource('info-bulles', InfoBulleController::class);
