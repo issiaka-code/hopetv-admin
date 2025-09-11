@@ -69,6 +69,27 @@
                                 <small>Fichier actuel: <span id="editCurrentAudioName"></span></small>
                             </div>
                         </div>
+                        
+                        <div class="form-group">
+                            <label class="font-weight-bold">Image de couverture (optionnelle)</label>
+                            <div class="custom-file">
+                                <input type="file" name="image_couverture" id="editPodcastAudioThumbnail"
+                                    class="custom-file-input @error('image_couverture') is-invalid @enderror"
+                                    accept="image/*">
+                                <label class="custom-file-label" for="editPodcastAudioThumbnail">Choisir une nouvelle image</label>
+                                @error('image_couverture')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <small class="form-text text-muted">Formats acceptés: JPG, PNG, GIF (max 2MB)</small>
+                            
+                            <div id="editCurrentAudioThumbnail" class="mt-2">
+                                <small>Image actuelle: <span id="editCurrentAudioThumbnailName"></span></small>
+                                <div class="mt-1">
+                                    <img id="editCurrentAudioThumbnailPreview" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 100px; max-height: 60px; display: none;">
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Section Fichier Vidéo pour ÉDITION -->

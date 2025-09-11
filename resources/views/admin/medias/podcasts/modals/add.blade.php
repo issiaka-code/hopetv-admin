@@ -63,6 +63,20 @@
                                 </div>
                                 <small class="form-text text-muted">Formats acceptés: MP3, WAV, AAC, etc. (max 50MB)</small>
                             </div>
+                            
+                            <div class="form-group">
+                                <label class="font-weight-bold">Image de couverture (optionnelle)</label>
+                                <div class="custom-file">
+                                    <input type="file" name="image_couverture" id="addPodcastAudioThumbnail"
+                                        class="custom-file-input @error('image_couverture') is-invalid @enderror"
+                                        accept="image/*">
+                                    <label class="custom-file-label" for="addPodcastAudioThumbnail">Choisir une image</label>
+                                    @error('image_couverture')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <small class="form-text text-muted">Formats acceptés: JPG, PNG, GIF (max 2MB)</small>
+                            </div>
                         </div>
 
                         <!-- Section Fichier Vidéo -->

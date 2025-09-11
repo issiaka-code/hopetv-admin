@@ -71,7 +71,12 @@ class TemoignageController extends Controller
                     $thumbnailUrl = asset('storage/' . $temoignage->media->url_fichier);
                 }
             } elseif ($isAudio || $isPdf) {
-                $thumbnailUrl = asset('storage/' . $temoignage->media->url_fichier);
+                // Pour audio/PDF, utiliser l'image de couverture si disponible
+                if ($temoignage->media->thumbnail) {
+                    $thumbnailUrl = asset('storage/' . $temoignage->media->thumbnail);
+                } else {
+                    $thumbnailUrl = null; // Pas de thumbnail personnalisé, on utilisera l'icône par défaut
+                }
             }
 
             return (object)[
@@ -82,7 +87,7 @@ class TemoignageController extends Controller
                 'media_type' => $isAudio ? 'audio' : ($isVideoLink ? 'video_link' : ($isVideoFile ? 'video_file' : 'pdf')),
                 'thumbnail_url' => $thumbnailUrl,
                 'video_url' => $isVideoFile ? asset('storage/' . $temoignage->media->url_fichier) : $thumbnailUrl,
-                'has_thumbnail' => $isVideoFile && $temoignage->media->thumbnail ? true : false,
+                'has_thumbnail' => $temoignage->media->thumbnail ? true : false,
             ];
         });
 
@@ -161,9 +166,9 @@ class TemoignageController extends Controller
             // Déterminer le type pour la base de données
             $type = $request->media_type === 'audio' ? 'audio' : ($request->media_type === 'video_file' ? 'video' : ($request->media_type === 'video_link' ? 'link' : 'pdf'));
 
-            // Traitement de l'image de couverture pour les vidéos fichiers
+            // Traitement de l'image de couverture pour tous les types de médias
             $thumbnailPath = null;
-            if ($request->media_type === 'video_file' && $request->hasFile('image_couverture')) {
+            if (in_array($request->media_type, ['video_file', 'audio', 'pdf']) && $request->hasFile('image_couverture')) {
                 $thumbnailFile = $request->file('image_couverture');
                 $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
                 $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
@@ -282,19 +287,6 @@ class TemoignageController extends Controller
                     $filePath = 'videos/' . $uniqueName;
                     $type = 'video';
                 }
-
-                // Traitement de l'image de couverture pour les vidéos fichiers
-                if ($request->media_type === 'video_file' && $request->hasFile('image_couverture')) {
-                    // Supprimer l'ancienne image de couverture
-                    if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
-                        Storage::disk('public')->delete($media->thumbnail);
-                    }
-
-                    $thumbnailFile = $request->file('image_couverture');
-                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
-                    $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
-                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
-                }
             } elseif ($request->media_type === 'video_link') {
                 $request->validate([
                     'lien_video' => 'required|url',
@@ -321,6 +313,19 @@ class TemoignageController extends Controller
                     $filePath = $file->storeAs('pdfs', $uniqueName, 'public');
                     $type = 'pdf';
                 }
+            }
+
+            // Traitement de l'image de couverture pour tous les types de médias
+            if (in_array($request->media_type, ['video_file', 'audio', 'pdf']) && $request->hasFile('image_couverture')) {
+                // Supprimer l'ancienne image de couverture
+                if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
+                    Storage::disk('public')->delete($media->thumbnail);
+                }
+
+                $thumbnailFile = $request->file('image_couverture');
+                $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
             }
 
             // Mise à jour du média
