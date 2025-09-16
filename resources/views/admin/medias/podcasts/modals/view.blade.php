@@ -1,4 +1,3 @@
-<!-- Modal pour visualiser le podcast -->
 <div class="modal fade" id="podcastViewModal" tabindex="-1" role="dialog" aria-labelledby="podcastViewModalLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-static" role="document">

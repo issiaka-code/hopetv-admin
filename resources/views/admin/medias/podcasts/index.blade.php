@@ -368,29 +368,27 @@
                                     <div class="podcast-thumbnail-container">
                                         <div class="podcast-thumbnail position-relative"
                                             data-podcast-url="{{ $podcast->thumbnail_url }}"
-                                            data-video-url="{{ $podcast->video_url }}"
+                                            data-media-url="{{ $podcast->media_url }}"
                                             data-podcast-name="{{ $podcast->nom }}"
                                             data-media-type="{{ $podcast->media_type }}"
                                             data-has-thumbnail="{{ $podcast->has_thumbnail ? 'true' : 'false' }}">
 
-                                            @if ($podcast->media_type === 'audio')
-                                                <div class="audio-thumbnail">
-                                                    <i class="fas fa-music"></i>
+                                            <!-- Afficher l'image de couverture ou icône par défaut -->
+                                            @if ($podcast->has_thumbnail)
+                                                <img src="{{ $podcast->thumbnail_url }}" alt="{{ $podcast->nom }}"
+                                                    style="width: 100%; height: 100%; object-fit: cover;">
+                                            @else
+                                                <div class="default-thumbnail d-flex align-items-center justify-content-center"
+                                                    style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                                    @if ($podcast->media_type === 'audio')
+                                                        <i class="fas fa-music text-white" style="font-size: 3rem;"></i>
+                                                    @elseif($podcast->media_type === 'video_link')
+                                                        <iframe src="{{ $podcast->thumbnail_url }}" width="100%"
+                                                            height="100%" frameborder="0"></iframe>
+                                                    @elseif($podcast->media_type === 'video_file')
+                                                        <i class="fas fa-video text-white" style="font-size: 3rem;"></i>
+                                                    @endif
                                                 </div>
-                                            @elseif ($podcast->media_type === 'video_link')
-                                                <iframe src="{{ $podcast->thumbnail_url }}" frameborder="0"
-                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                    allowfullscreen>
-                                                </iframe>
-                                            @elseif ($podcast->media_type === 'video_file')
-                                                @if ($podcast->has_thumbnail)
-                                                    <img src="{{ $podcast->thumbnail_url }}" alt="{{ $podcast->nom }}" style="width: 100%; height: 100%; object-fit: cover;">
-                                                @else
-                                                    <video src="{{ $podcast->video_url }}" controls
-                                                        style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
-                                                        <i class="fas fa-video" style="font-size: 3rem; color: #4e73df;"></i>
-                                                    </video>
-                                                @endif
                                             @endif
 
                                             <div class="thumbnail-overlay">
@@ -406,6 +404,14 @@
                                                     Fichier vidéo
                                                 @endif
                                             </span>
+
+                                            <!-- Badge statut publication (uniquement pour les vidéos) -->
+                                            @if(in_array($podcast->media_type, ['video_link', 'video_file']))
+                                                <span class="badge {{ $podcast->is_published ? 'badge-success' : 'badge-secondary' }}" 
+                                                      style="position: absolute; top: 10px; left: 10px; z-index: 10;">
+                                                    {{ $podcast->is_published ? 'Publié' : 'Non publié' }}
+                                                </span>
+                                            @endif
                                         </div>
                                     </div>
 
@@ -423,9 +429,9 @@
                                             </small>
 
                                             <div class="btn-group">
-                                                <button class="btn btn-sm btn-outline-info view-podcast-btn rounded"
+                                                <button class="btn btn-sm btn-outline-info view-podcast-btn rounded" title="Voir le podcast"
                                                     data-podcast-url="{{ $podcast->thumbnail_url }}"
-                                                    data-video-url="{{ $podcast->video_url }}"
+                                                    data-media-url="{{ $podcast->media_url }}"
                                                     data-podcast-name="{{ $podcast->nom }}"
                                                     data-title="{{ $podcast->nom }}"
                                                     data-description="{{ $podcast->description }}"
@@ -433,19 +439,42 @@
                                                     data-has-thumbnail="{{ $podcast->has_thumbnail ? 'true' : 'false' }}">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
-                                                <button class="btn btn-sm btn-outline-primary edit-podcast-btn mx-1 rounded"
+                                                <button class="btn btn-sm btn-outline-primary edit-podcast-btn mx-1 rounded" title="Modifier le podcast"
                                                     data-podcast-id="{{ $podcast->id }}">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
+
                                                 <form action="{{ route('podcasts.destroy', $podcast->id) }}" method="POST"
                                                     class="d-inline delete-form">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded"
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded" title="Supprimer le podcast"
                                                         onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce podcast ?')">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </form>
+                                                <!-- Boutons Publication/Dépublication (uniquement pour les vidéos) -->
+                                                @if(in_array($podcast->media_type, ['video_link', 'video_file']))
+                                                    @if($podcast->is_published)
+                                                        <form action="{{ route('podcasts.unpublish', $podcast->id) }}" method="POST"
+                                                            class="d-inline">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-sm btn-outline-warning rounded mx-1"
+                                                                title="Dépublier la vidéo">
+                                                                <i class="fas fa-power-off"></i>
+                                                            </button>
+                                                        </form>
+                                                    @else
+                                                        <form action="{{ route('podcasts.publish', $podcast->id) }}" method="POST"
+                                                            class="d-inline">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-sm btn-outline-success rounded mx-1"
+                                                                title="Publier la vidéo">
+                                                                <i class="fas fa-power-off"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -484,30 +513,41 @@
             // ===== GESTION DU FORMULAIRE D'AJOUT =====
             $('input[name="media_type"]', '#addPodcastForm').change(function() {
                 const selectedType = $(this).val();
+
+                // Masquer toutes les se    ctions
                 $('#addAudioFileSection, #addVideoFileSection, #addVideoLinkSection').addClass('d-none');
+
+                // Réinitialiser les validations
                 $('#addAudioFile, #addVideoFile, #addVideoLink').removeAttr('required');
+                $('#addAudioThumbnail, #addVideoThumbnail').removeAttr('required');
 
                 if (selectedType === 'audio') {
                     $('#addAudioFileSection').removeClass('d-none');
                     $('#addAudioFile').attr('required', 'required');
+                    $('#addAudioThumbnail').attr('required', 'required');
                 } else if (selectedType === 'video_file') {
                     $('#addVideoFileSection').removeClass('d-none');
                     $('#addVideoFile').attr('required', 'required');
+                    $('#addVideoThumbnail').attr('required', 'required');
                 } else if (selectedType === 'video_link') {
                     $('#addVideoLinkSection').removeClass('d-none');
                     $('#addVideoLink').attr('required', 'required');
+                    // Note: addLinkThumbnail n'est pas requis pour les liens vidéo
                 }
             });
 
-            $('#addAudioFile, #addVideoFile, #addPodcastThumbnail').on('change', function() {
-                let fileName = $(this).val().split('\\').pop();
-                $(this).next('.custom-file-label').addClass("selected").html(fileName);
-            });
+            // Gestion des labels de fichiers
+            $('#addAudioFile, #addVideoFile, #addAudioThumbnail, #addVideoThumbnail, #addLinkThumbnail').on(
+                'change',
+                function() {
+                    let fileName = $(this).val().split('\\').pop();
+                    $(this).next('.custom-file-label').addClass("selected").html(fileName);
+                });
 
+            // Réinitialisation du modal
             $('#addPodcastModal').on('hidden.bs.modal', function() {
                 $('#addPodcastForm')[0].reset();
-                $('#addAudioFile, #addVideoFile').next('.custom-file-label').html('Choisir un fichier');
-                $('#addPodcastThumbnail').next('.custom-file-label').html('Choisir une image');
+                $('.custom-file-label').html('Choisir un fichier');
                 $('#addMediaTypeAudio').prop('checked', true).trigger('change');
             });
 
@@ -516,6 +556,7 @@
                 const selectedType = $(this).val();
                 $('#editAudioFileSection, #editVideoFileSection, #editVideoLinkSection').addClass('d-none');
                 $('#editAudioFile, #editVideoFile, #editVideoLink').removeAttr('required');
+                $('#editAudioThumbnail, #editVideoThumbnail').removeAttr('required');
 
                 if (selectedType === 'audio') {
                     $('#editAudioFileSection').removeClass('d-none');
@@ -527,12 +568,15 @@
                 }
             });
 
-            $('#editAudioFile, #editVideoFile, #editPodcastThumbnail').on('change', function() {
-                let fileName = $(this).val().split('\\').pop();
-                $(this).next('.custom-file-label').addClass("selected").html(fileName ||
-                    'Choisir un nouveau fichier');
-            });
+            $('#editAudioFile, #editVideoFile, #editAudioThumbnail, #editVideoThumbnail, #editLinkThumbnail').on(
+                'change',
+                function() {
+                    let fileName = $(this).val().split('\\').pop();
+                    $(this).next('.custom-file-label').addClass("selected").html(fileName ||
+                        'Choisir un nouveau fichier');
+                });
 
+            // ===== ÉDITION DES PODCASTS =====
             $(document).on('click', '.edit-podcast-btn', function() {
                 const podcastId = $(this).data('podcast-id');
                 $.ajax({
@@ -554,6 +598,17 @@
                                     '/').pop());
                                 $('#editCurrentAudio').show();
                                 $('#editCurrentVideo, #editCurrentLink').hide();
+
+                                // Afficher l'image de couverture audio
+                                if (data.media.thumbnail) {
+                                    const thumbnailName = data.media.thumbnail.split('/').pop();
+                                    $('#editCurrentAudioThumbnailName').text(thumbnailName);
+                                    $('#editCurrentAudioThumbnailPreview').attr('src',
+                                        '/storage/' + data.media.thumbnail).show();
+                                    $('#editCurrentAudioThumbnail').show();
+                                } else {
+                                    $('#editCurrentAudioThumbnail').hide();
+                                }
                             } else if (mediaType === 'video') {
                                 $('#editMediaTypeVideoFile').prop('checked', true).trigger(
                                     'change');
@@ -561,15 +616,16 @@
                                     '/').pop());
                                 $('#editCurrentVideo').show();
                                 $('#editCurrentAudio, #editCurrentLink').hide();
-                                
-                                // Gestion de l'image de couverture
+
+                                // Afficher l'image de couverture vidéo
                                 if (data.media.thumbnail) {
                                     const thumbnailName = data.media.thumbnail.split('/').pop();
-                                    $('#editCurrentThumbnailName').text(thumbnailName);
-                                    $('#editCurrentThumbnailPreview').attr('src', '/storage/' + data.media.thumbnail).show();
-                                    $('#editCurrentThumbnail').show();
+                                    $('#editCurrentVideoThumbnailName').text(thumbnailName);
+                                    $('#editCurrentVideoThumbnailPreview').attr('src',
+                                        '/storage/' + data.media.thumbnail).show();
+                                    $('#editCurrentVideoThumbnail').show();
                                 } else {
-                                    $('#editCurrentThumbnail').hide();
+                                    $('#editCurrentVideoThumbnail').hide();
                                 }
                             } else if (mediaType === 'link') {
                                 $('#editMediaTypeVideoLink').prop('checked', true).trigger(
@@ -579,6 +635,17 @@
                                 $('#editViewCurrentLink').attr('href', data.media.url_fichier);
                                 $('#editCurrentLink').show();
                                 $('#editCurrentAudio, #editCurrentVideo').hide();
+
+                                // Afficher l'image de couverture pour lien (si existe)
+                                if (data.media.thumbnail) {
+                                    const thumbnailName = data.media.thumbnail.split('/').pop();
+                                    $('#editCurrentLinkThumbnailName').text(thumbnailName);
+                                    $('#editCurrentLinkThumbnailPreview').attr('src',
+                                        '/storage/' + data.media.thumbnail).show();
+                                    $('#editCurrentLinkThumbnail').show();
+                                } else {
+                                    $('#editCurrentLinkThumbnail').hide();
+                                }
                             }
                         }
                         $('#editPodcastModal').modal('show');
@@ -588,10 +655,10 @@
                     }
                 });
             });
-
             // ===== VISUALISATION DES PODCASTS =====
             $(document).on('click', '.view-podcast-btn, .podcast-thumbnail', function() {
-                const podcastUrl = $(this).data('podcast-url');
+                const mediaUrl = $(this).data('media-url');
+                const thumbnailUrl = $(this).data('podcast-url');
                 const podcastName = $(this).data('podcast-name');
                 const mediaType = $(this).data('media-type');
                 const podcastDescription = $(this).closest('.podcast-card').find('.card-text').attr(
@@ -599,23 +666,21 @@
 
                 // Masquer tous les lecteurs et réinitialiser
                 $('#audioPlayerContainer, #videoPlayerContainer, #iframePlayerContainer').addClass(
-                'd-none');
+                    'd-none');
                 $('#modalAudioPlayer').attr('src', '').get(0).load();
                 $('#modalVideoPlayer').attr('src', '').get(0).load();
                 $('#modalIframePlayer').attr('src', '');
 
                 if (mediaType === 'audio') {
-                    $('#modalAudioPlayer').attr('src', podcastUrl).get(0).load();
+                    $('#modalAudioPlayer').attr('src', mediaUrl).get(0).load();
                     $('#audioPlayerContainer').removeClass('d-none');
                     $('#mediaTypeBadge').text('Audio').removeClass('d-none');
                 } else if (mediaType === 'video_link') {
-                    $('#modalIframePlayer').attr('src', podcastUrl);
+                    $('#modalIframePlayer').attr('src', thumbnailUrl);
                     $('#iframePlayerContainer').removeClass('d-none');
                     $('#mediaTypeBadge').text('Vidéo en ligne').removeClass('d-none');
                 } else if (mediaType === 'video_file') {
-                    // Utiliser l'URL de la vidéo pour la lecture
-                    const videoUrl = $(this).data('video-url') || podcastUrl;
-                    $('#modalVideoPlayer').attr('src', videoUrl).get(0).load();
+                    $('#modalVideoPlayer').attr('src', mediaUrl).get(0).load();
                     $('#videoPlayerContainer').removeClass('d-none');
                     $('#mediaTypeBadge').text('Vidéo locale').removeClass('d-none');
                 }
@@ -638,7 +703,7 @@
 
                 // Masquer tous les lecteurs
                 $('#audioPlayerContainer, #videoPlayerContainer, #iframePlayerContainer').addClass(
-                'd-none');
+                    'd-none');
 
                 // Vider les informations
                 $('#podcastTitle, #podcastDescription, #mediaTypeBadge').text('');

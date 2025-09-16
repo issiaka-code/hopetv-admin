@@ -369,14 +369,20 @@
             <div class="row">
                 <div class="col-12">
                     <div id="temoignages-grid">
-                        @forelse($temoignagesData as $temoignage)
+                        @forelse($temoignagesData as $temoignageData)
                             @php
-                                $id = $temoignage->id;
-                                $nom = $temoignage->nom;
-                                $description = $temoignage->description;
-                                $created_at = $temoignage->created_at;
-                                $media_type = $temoignage->media_type;
-                                $thumbnail_url = $temoignage->thumbnail_url;
+                                $id = $temoignageData->id;
+                                $nom = $temoignageData->nom;
+                                $description = $temoignageData->description;
+                                $created_at = $temoignageData->created_at;
+                                $media_type = $temoignageData->media_type;
+                                $thumbnail_url = $temoignageData->thumbnail_url;
+                                // Récupérer l'objet témoignage original pour accéder à la relation media
+                                $temoignage = $temoignages->find($id);
+                                
+                                // Utiliser directement la relation media pour l'URL
+                                $media_url = $temoignage && $temoignage->media ? asset('storage/' . $temoignage->media->url_fichier) : '';
+                                $is_published = $temoignageData->is_published ?? false;
                             @endphp
 
                             <div class="temoignage-grid-item">
@@ -384,26 +390,29 @@
                                     <div class="temoignage-thumbnail-container">
                                         <div class="temoignage-thumbnail position-relative"
                                             data-temoignage-url="{{ $thumbnail_url }}"
-                                            data-video-url="{{ $temoignage->video_url }}"
+                                            data-video-url="{{ $temoignageData->video_url ?? '' }}"
                                             data-temoignage-name="{{ $nom }}"
                                             data-media-type="{{ $media_type }}"
-                                            data-has-thumbnail="{{ $temoignage->has_thumbnail ? 'true' : 'false' }}">
+                                            data-has-thumbnail="{{ $temoignageData->has_thumbnail ? 'true' : 'false' }}">
 
-                                            @if ($media_type === 'audio')
-                                                <div class="audio-thumbnail"><i class="fas fa-music"></i></div>
-                                            @elseif ($media_type === 'video_link')
-                                                <iframe src="{{ $thumbnail_url }}" frameborder="0"
-                                                    allowfullscreen></iframe>
-                                            @elseif ($media_type === 'pdf')
-                                                <div class="pdf-thumbnail"><i class="fas fa-file-pdf"></i></div>
-                                            @elseif ($media_type === 'video_file')
-                                                @if ($temoignage->has_thumbnail)
-                                                    <img src="{{ $thumbnail_url }}" alt="{{ $nom }}" style="width: 100%; height: 100%; object-fit: cover;">
-                                                @else
-                                                    <video src="{{ $temoignage->video_url }}"></video>
-                                                @endif
+                                            <!-- Afficher l'image de couverture ou icône par défaut -->
+                                            @if ($temoignageData->has_thumbnail)
+                                                <img src="{{ $thumbnail_url }}" alt="{{ $nom }}"
+                                                    style="width: 100%; height: 100%; object-fit: cover;">
                                             @else
-                                                <video src="{{ $thumbnail_url }}"></video>
+                                                <div class="default-thumbnail d-flex align-items-center justify-content-center"
+                                                    style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                                    @if ($media_type === 'audio')
+                                                        <i class="fas fa-music text-white" style="font-size: 3rem;"></i>
+                                                    @elseif($media_type === 'video_link')
+                                                        <iframe src="{{ $thumbnail_url }}" width="100%"
+                                                            height="100%" frameborder="0"></iframe>
+                                                    @elseif($media_type === 'video_file')
+                                                        <i class="fas fa-video text-white" style="font-size: 3rem;"></i>
+                                                    @elseif($media_type === 'pdf')
+                                                        <i class="fas fa-file-pdf text-white" style="font-size: 3rem;"></i>
+                                                    @endif
+                                                </div>
                                             @endif
 
                                             <div class="thumbnail-overlay">
@@ -423,6 +432,14 @@
                                                                     : $media_type))),
                                                 ) }}
                                             </span>
+
+                                            <!-- Badge statut publication (uniquement pour les vidéos) -->
+                                            @if(in_array($media_type, ['video_link', 'video_file']))
+                                                <span class="badge {{ $is_published ? 'badge-success' : 'badge-secondary' }}" 
+                                                      style="position: absolute; top: 10px; left: 10px; z-index: 10;">
+                                                    {{ $is_published ? 'Publié' : 'Non publié' }}
+                                                </span>
+                                            @endif
                                         </div>
                                     </div>
 
@@ -435,28 +452,52 @@
                                             <small class="text-muted mb-1">{{ $created_at->format('d/m/Y') }}</small>
 
                                             <div class="btn-group">
-                                                <button class="btn btn-sm btn-outline-info view-temoignage-btn rounded"
+                                                <button class="btn btn-sm btn-outline-info view-temoignage-btn rounded" title="Voir le témoignage"
                                                     data-temoignage-url="{{ $thumbnail_url }}"
+                                                    data-media-url="{{ $media_url }}"
                                                     data-temoignage-name="{{ $nom }}"
                                                     data-title="{{ $nom }}"
                                                     data-description="{{ $description }}"
                                                     data-media-type="{{ $media_type }}">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
-                                                <button
-                                                    class="btn btn-sm btn-outline-primary edit-temoignage-btn mx-1 rounded"
+                                                <button class="btn btn-sm btn-outline-primary edit-temoignage-btn mx-1 rounded" title="Modifier le témoignage"
                                                     data-temoignage-id="{{ $id }}">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
+
                                                 <form action="{{ route('temoignages.destroy', $id) }}" method="POST"
                                                     class="d-inline delete-form">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded"
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded" title="Supprimer le témoignage"
                                                         onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce témoignage ?')">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </form>
+
+                                                <!-- Boutons Publication/Dépublication (uniquement pour les vidéos) -->
+                                                @if(in_array($media_type, ['video_link', 'video_file']))
+                                                    @if($is_published)
+                                                        <form action="{{ route('temoignages.unpublish', $id) }}" method="POST"
+                                                            class="d-inline">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-sm btn-outline-warning rounded mx-1"
+                                                                title="Dépublier la vidéo">
+                                                                <i class="fas fa-power-off"></i>
+                                                            </button>
+                                                        </form>
+                                                    @else
+                                                        <form action="{{ route('temoignages.publish', $id) }}" method="POST"
+                                                            class="d-inline">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-sm btn-outline-success rounded mx-1"
+                                                                title="Publier la vidéo">
+                                                                <i class="fas fa-power-off"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -497,24 +538,24 @@
                 const selectedType = $(this).val();
                 $('#addAudioFileSection, #addVideoFileSection, #addVideoLinkSection, #addPdfFileSection')
                     .addClass('d-none');
-                $('#addAudioFile, #addVideoFile, #addVideoLink, #addPdfFile').removeAttr('required');
+                $('#addAudioFile, #addVideoFile, #addVideoLink, #addPdfFile, #addAudioImageFile, #addVideoImageFile, #addPdfImageFile').removeAttr('required');
 
                 if (selectedType === 'audio') {
                     $('#addAudioFileSection').removeClass('d-none');
-                    $('#addAudioFile').attr('required', 'required');
+                    $('#addAudioFile, #addAudioImageFile').attr('required', 'required');
                 } else if (selectedType === 'video_file') {
                     $('#addVideoFileSection').removeClass('d-none');
-                    $('#addVideoFile').attr('required', 'required');
+                    $('#addVideoFile, #addVideoImageFile').attr('required', 'required');
                 } else if (selectedType === 'video_link') {
                     $('#addVideoLinkSection').removeClass('d-none');
                     $('#addVideoLink').attr('required', 'required');
                 } else if (selectedType === 'pdf') {
                     $('#addPdfFileSection').removeClass('d-none');
-                    $('#addPdfFile').attr('required', 'required');
+                    $('#addPdfFile, #addPdfImageFile').attr('required', 'required');
                 }
             });
 
-            $('#addAudioFile, #addVideoFile, #addPdfFile, #addTemoignageThumbnail').on('change', function() {
+            $('#addAudioFile, #addVideoFile, #addPdfFile, #addAudioImageFile, #addVideoImageFile, #addPdfImageFile').on('change', function() {
                 let fileName = $(this).val().split('\\').pop();
                 $(this).next('.custom-file-label').addClass("selected").html(fileName);
             });
@@ -523,7 +564,7 @@
                 $('#addTemoignageForm')[0].reset();
                 $('#addAudioFile, #addVideoFile, #addPdfFile').next('.custom-file-label').html(
                     'Choisir un fichier');
-                $('#addTemoignageThumbnail').next('.custom-file-label').html('Choisir une image');
+                $('#addAudioImageFile, #addVideoImageFile, #addPdfImageFile').next('.custom-file-label').html('Choisir une image');
                 $('#addMediaTypeAudio').prop('checked', true).trigger('change');
             });
 
@@ -546,7 +587,7 @@
                 }
             });
 
-            $('#editAudioFile, #editVideoFile, #editPdfFile, #editTemoignageThumbnail').on('change', function() {
+            $('#editAudioFile, #editVideoFile, #editPdfFile, #editAudioImageFile, #editVideoImageFile, #editPdfImageFile').on('change', function() {
                 let fileName = $(this).val().split('\\').pop();
                 $(this).next('.custom-file-label').addClass("selected").html(fileName ||
                     'Choisir un nouveau fichier');
@@ -636,24 +677,42 @@
                 $('#modalIframePlayer').attr('src', '');
                 $('#modalPdfViewer').attr('src', '');
 
+                // Récupérer l'URL du média réel
+                const mediaUrl = $(this).data('media-url');
+                
+                
                 if (mediaType === 'audio') {
-                    $('#modalAudioPlayer').attr('src', temoignageUrl).get(0).load();
-                    $('#audioPlayerContainer').removeClass('d-none');
-                    $('#mediaTypeBadge').text('Audio').removeClass('d-none');
+                    if (mediaUrl) {
+                        console.log('Loading audio:', mediaUrl);
+                        $('#modalAudioPlayer').attr('src', mediaUrl);
+                        $('#modalAudioPlayer')[0].load();
+                        $('#audioPlayerContainer').removeClass('d-none');
+                        $('#mediaTypeBadge').text('Audio').removeClass('d-none');
+                    } else {
+                        console.log('No audio URL found');
+                    }
                 } else if (mediaType === 'video_link') {
                     $('#modalIframePlayer').attr('src', temoignageUrl);
                     $('#iframePlayerContainer').removeClass('d-none');
                     $('#mediaTypeBadge').text('Vidéo en ligne').removeClass('d-none');
                 } else if (mediaType === 'video_file') {
                     // Utiliser l'URL de la vidéo pour la lecture
-                    const videoUrl = $(this).data('video-url') || temoignageUrl;
-                    $('#modalVideoPlayer').attr('src', videoUrl).get(0).load();
-                    $('#videoPlayerContainer').removeClass('d-none');
-                    $('#mediaTypeBadge').text('Vidéo locale').removeClass('d-none');
+                    const videoUrl = $(this).data('video-url') || mediaUrl;
+                    if (videoUrl) {
+                        $('#modalVideoPlayer').attr('src', videoUrl);
+                        $('#modalVideoPlayer')[0].load();
+                        $('#videoPlayerContainer').removeClass('d-none');
+                        $('#mediaTypeBadge').text('Vidéo locale').removeClass('d-none');
+                    }
                 } else if (mediaType === 'pdf') {
-                    $('#modalPdfViewer').attr('src', temoignageUrl);
-                    $('#pdfViewerContainer').removeClass('d-none');
-                    $('#mediaTypeBadge').text('PDF').removeClass('d-none');
+                    if (mediaUrl) {
+                        console.log('Loading PDF:', mediaUrl);
+                        $('#modalPdfViewer').attr('src', mediaUrl + '#toolbar=0');
+                        $('#pdfViewerContainer').removeClass('d-none');
+                        $('#mediaTypeBadge').text('PDF').removeClass('d-none');
+                    } else {
+                        console.log('No PDF URL found');
+                    }
                 }
 
                 $('#temoignageTitle').text(temoignageName);

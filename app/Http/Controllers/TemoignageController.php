@@ -42,7 +42,7 @@ class TemoignageController extends Controller
         $temoignages = $query->paginate(12);
 
         // Préparer chaque variable pour la vue et JS
-        $temoignagesData = $temoignages->map(function ($temoignage) {
+        $temoignagesData = collect($temoignages->items())->map(function ($temoignage) {
             $isAudio = $temoignage->media && $temoignage->media->type === 'audio';
             $isVideoLink = $temoignage->media && $temoignage->media->type === 'link';
             $isVideoFile = $temoignage->media && $temoignage->media->type === 'video';
@@ -71,9 +71,14 @@ class TemoignageController extends Controller
                     $thumbnailUrl = asset('storage/' . $temoignage->media->url_fichier);
                 }
             } elseif ($isAudio || $isPdf) {
-                $thumbnailUrl = asset('storage/' . $temoignage->media->url_fichier);
+                // Pour les audios et PDFs, utiliser l'image de couverture si disponible
+                if ($temoignage->media->thumbnail) {
+                    $thumbnailUrl = asset('storage/' . $temoignage->media->thumbnail);
+                } else {    
+                    $thumbnailUrl = null; // Pas d'image, on utilisera l'icône par défaut
+                }
             }
-
+            dd($thumbnailUrl);
             return (object)[
                 'id' => $temoignage->id,
                 'nom' => $temoignage->nom,
@@ -82,7 +87,9 @@ class TemoignageController extends Controller
                 'media_type' => $isAudio ? 'audio' : ($isVideoLink ? 'video_link' : ($isVideoFile ? 'video_file' : 'pdf')),
                 'thumbnail_url' => $thumbnailUrl,
                 'video_url' => $isVideoFile ? asset('storage/' . $temoignage->media->url_fichier) : $thumbnailUrl,
-                'has_thumbnail' => $isVideoFile && $temoignage->media->thumbnail ? true : false,
+                'media_url' => $temoignage->media ? asset('storage/' . $temoignage->media->url_fichier) : null,
+                'has_thumbnail' => $temoignage->media && $temoignage->media->thumbnail ? true : false,
+                'is_published' => $temoignage->media->is_published ?? true,
             ];
         });
 
@@ -106,6 +113,7 @@ class TemoignageController extends Controller
             if ($request->media_type === 'audio') {
                 $request->validate([
                     'fichier_audio' => 'required|file|mimes:mp3,wav,aac,ogg,flac|max:512000',
+                    'image_couverture_audio' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                 ]);
 
                 $file = $request->file('fichier_audio');
@@ -117,7 +125,7 @@ class TemoignageController extends Controller
             } elseif ($request->media_type === 'video_file') {
                 $request->validate([
                     'fichier_video' => 'required|file|mimes:mp4,avi,mov,wmv,flv,mkv,webm|max:1024000',
-                    'image_couverture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+                    'image_couverture_video' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                 ]);
 
                 $file = $request->file('fichier_video');
@@ -148,6 +156,7 @@ class TemoignageController extends Controller
             } elseif ($request->media_type === 'pdf') {
                 $request->validate([
                     'fichier_pdf' => 'required|file|mimes:pdf|max:20480',
+                    'image_couverture_pdf' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                 ]);
 
                 $file = $request->file('fichier_pdf');
@@ -161,10 +170,20 @@ class TemoignageController extends Controller
             // Déterminer le type pour la base de données
             $type = $request->media_type === 'audio' ? 'audio' : ($request->media_type === 'video_file' ? 'video' : ($request->media_type === 'video_link' ? 'link' : 'pdf'));
 
-            // Traitement de l'image de couverture pour les vidéos fichiers
+            // Traitement de l'image de couverture
             $thumbnailPath = null;
-            if ($request->media_type === 'video_file' && $request->hasFile('image_couverture')) {
-                $thumbnailFile = $request->file('image_couverture');
+            if ($request->media_type === 'audio' && $request->hasFile('image_couverture_audio')) {
+                $thumbnailFile = $request->file('image_couverture_audio');
+                $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
+            } elseif ($request->media_type === 'video_file' && $request->hasFile('image_couverture_video')) {
+                $thumbnailFile = $request->file('image_couverture_video');
+                $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
+            } elseif ($request->media_type === 'pdf' && $request->hasFile('image_couverture_pdf')) {
+                $thumbnailFile = $request->file('image_couverture_pdf');
                 $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
                 $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
                 $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
@@ -250,6 +269,19 @@ class TemoignageController extends Controller
                     $filePath = $file->storeAs('audios', $uniqueName, 'public');
                     $type = 'audio';
                 }
+
+                // Traitement de l'image de couverture pour les audios
+                if ($request->hasFile('image_couverture_audio')) {
+                    // Supprimer l'ancienne image de couverture
+                    if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
+                        Storage::disk('public')->delete($media->thumbnail);
+                    }
+
+                    $thumbnailFile = $request->file('image_couverture_audio');
+                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
+                }
             } elseif ($request->media_type === 'video_file') {
                 $request->validate([
                     'fichier_video' => 'nullable|file|mimes:mp4,avi,mov,wmv,flv,mkv,webm|max:1024000',
@@ -284,13 +316,13 @@ class TemoignageController extends Controller
                 }
 
                 // Traitement de l'image de couverture pour les vidéos fichiers
-                if ($request->media_type === 'video_file' && $request->hasFile('image_couverture')) {
+                if ($request->hasFile('image_couverture_video')) {
                     // Supprimer l'ancienne image de couverture
                     if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
                         Storage::disk('public')->delete($media->thumbnail);
                     }
 
-                    $thumbnailFile = $request->file('image_couverture');
+                    $thumbnailFile = $request->file('image_couverture_video');
                     $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
                     $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
                     $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
@@ -320,6 +352,19 @@ class TemoignageController extends Controller
                     // Stockage
                     $filePath = $file->storeAs('pdfs', $uniqueName, 'public');
                     $type = 'pdf';
+                }
+
+                // Traitement de l'image de couverture pour les PDFs
+                if ($request->hasFile('image_couverture_pdf')) {
+                    // Supprimer l'ancienne image de couverture
+                    if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
+                        Storage::disk('public')->delete($media->thumbnail);
+                    }
+
+                    $thumbnailFile = $request->file('image_couverture_pdf');
+                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
                 }
             }
 
@@ -377,6 +422,56 @@ class TemoignageController extends Controller
             DB::rollBack();
             return redirect()->back()
                 ->with('error', 'Erreur lors de la suppression: ' . $e->getMessage());
+        }
+    }
+
+    public function publish($id)
+    {
+        $temoignage = Temoignage::findOrFail($id);
+        
+        // Vérifier que c'est une vidéo
+        if (!$temoignage->media || !in_array($temoignage->media->type, ['video', 'link'])) {
+            Alert::error('Erreur', 'Seules les vidéos peuvent être publiées/dépubliées.');
+            return redirect()->back();
+        }
+
+        try {
+            $temoignage->media->update([
+                'is_published' => true,
+                'update_by' => auth()->id(),
+            ]);
+
+            notify()->success('Succès', 'Témoignage vidéo publié avec succès.');
+            return redirect()->back();
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la publication: ' . $e->getMessage());
+            Alert::error('Erreur', 'Impossible de publier le témoignage.');
+            return redirect()->back();
+        }
+    }
+
+    public function unpublish($id)
+    {
+        $temoignage = Temoignage::findOrFail($id);
+        
+        // Vérifier que c'est une vidéo
+        if (!$temoignage->media || !in_array($temoignage->media->type, ['video', 'link'])) {
+            Alert::error('Erreur', 'Seules les vidéos peuvent être publiées/dépubliées.');
+            return redirect()->back();
+        }
+
+        try {
+            $temoignage->media->update([
+                'is_published' => false,
+                'update_by' => auth()->id(),
+            ]);
+
+            notify()->success('Succès', 'Témoignage vidéo dépublié avec succès.');
+            return redirect()->back();
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la dépublication: ' . $e->getMessage());
+            Alert::error('Erreur', 'Impossible de dépublier le témoignage.');
+            return redirect()->back();
         }
     }
 }

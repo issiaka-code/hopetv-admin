@@ -39,36 +39,34 @@ class PodcastController extends Controller
 
         $podcasts = $query->paginate(12);
 
-        // Préparer chaque variable pour la vue et JS
         $podcastsData = $podcasts->map(function ($podcast) {
             $isAudio = $podcast->media && $podcast->media->type === 'audio';
             $isVideoLink = $podcast->media && $podcast->media->type === 'link';
             $isVideoFile = $podcast->media && $podcast->media->type === 'video';
 
             $thumbnailUrl = null;
+            $hasThumbnail = false;
 
-            if ($isVideoLink) {
-                $rawUrl = $podcast->media->url_fichier;
-
-                if (Str::contains($rawUrl, 'youtube.com/watch?v=')) {
-                    $videoId = explode('v=', parse_url($rawUrl, PHP_URL_QUERY))[1] ?? null;
-                    $videoId = explode('&', $videoId)[0];
-                    $thumbnailUrl = $videoId ? "https://www.youtube.com/embed/$videoId" : $rawUrl;
-                } elseif (Str::contains($rawUrl, 'youtu.be/')) {
-                    $videoId = basename(parse_url($rawUrl, PHP_URL_PATH));
-                    $thumbnailUrl = "https://www.youtube.com/embed/$videoId";
-                } else {
-                    $thumbnailUrl = $rawUrl;
+            // Priorité à l'image de couverture si elle existe
+            if ($podcast->media && $podcast->media->thumbnail) {
+                $thumbnailUrl = asset('storage/' . $podcast->media->thumbnail);
+                $hasThumbnail = true;
+            }
+            // Sinon, utiliser les thumbnails par défaut selon le type
+            else {
+                if ($isVideoLink) {
+                    $rawUrl = $podcast->media->url_fichier;
+                    if (Str::contains($rawUrl, 'youtube.com/watch?v=')) {
+                        $videoId = explode('v=', parse_url($rawUrl, PHP_URL_QUERY))[1] ?? null;
+                        $videoId = explode('&', $videoId)[0];
+                        $thumbnailUrl = $videoId ? "https://www.youtube.com/embed/$videoId" : $rawUrl;
+                    } elseif (Str::contains($rawUrl, 'youtu.be/')) {
+                        $videoId = basename(parse_url($rawUrl, PHP_URL_PATH));
+                        $thumbnailUrl = "https://www.youtube.com/embed/$videoId";
+                    } else {
+                        $thumbnailUrl = $rawUrl;
+                    }
                 }
-            } elseif ($isVideoFile) {
-                // Pour les vidéos fichiers, utiliser l'image de couverture si disponible
-                if ($podcast->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $podcast->media->thumbnail);
-                } else {
-                    $thumbnailUrl = asset('storage/' . $podcast->media->url_fichier);
-                }
-            } elseif ($isAudio) {
-                $thumbnailUrl = asset('storage/' . $podcast->media->url_fichier);
             }
 
             return (object)[
@@ -78,8 +76,9 @@ class PodcastController extends Controller
                 'created_at' => $podcast->created_at,
                 'media_type' => $isAudio ? 'audio' : ($isVideoLink ? 'video_link' : 'video_file'),
                 'thumbnail_url' => $thumbnailUrl,
-                'video_url' => $isVideoFile ? asset('storage/' . $podcast->media->url_fichier) : $thumbnailUrl,
-                'has_thumbnail' => $isVideoFile && $podcast->media->thumbnail ? true : false,
+                'media_url' => $isVideoFile || $isAudio ? asset('storage/' . $podcast->media->url_fichier) : $podcast->media->url_fichier,
+                'has_thumbnail' => $hasThumbnail,
+                'is_published' => $podcast->media->is_published ?? true,
             ];
         });
 
@@ -95,27 +94,42 @@ class PodcastController extends Controller
             'nom' => 'required|string|max:255',
             'description' => 'required|string',
             'media_type' => 'required|in:audio,video_file,video_link',
-            'image_couverture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         try {
+            // Variables pour le fichier et la miniature
+            $filePath = null;
+            $thumbnailPath = null;
+            $type = null;
+
             if ($request->media_type === 'audio') {
                 $request->validate([
                     'fichier_audio' => 'required|file|mimes:mp3,wav,aac,ogg,flac|max:512000',
+                    'image_couverture_audio' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                 ]);
 
+                // Traitement du fichier audio
                 $file = $request->file('fichier_audio');
                 $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
                 $uniqueName = $filename . '_' . now()->format('Ymd_His') . '.mp3';
-
-                // Stockage direct sans optimisation
                 $filePath = $file->storeAs('audios', $uniqueName, 'public');
+
+                // Traitement de l'image de couverture
+                if ($request->hasFile('image_couverture_audio')) {
+                    $thumbnailFile = $request->file('image_couverture_audio');
+                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
+                }
+
+                $type = 'audio';
             } elseif ($request->media_type === 'video_file') {
                 $request->validate([
                     'fichier_video' => 'required|file|mimes:mp4,avi,mov,wmv,flv,mkv,webm|max:1024000',
-                    'image_couverture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+                    'image_couverture_video' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                 ]);
 
+                // Traitement du fichier vidéo
                 $file = $request->file('fichier_video');
                 $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
                 $uniqueName = $filename . '_' . now()->format('Ymd_His') . '.mp4';
@@ -136,23 +150,23 @@ class PodcastController extends Controller
                 Storage::disk('local')->delete($tempPath);
 
                 $filePath = 'videos/' . $uniqueName;
+
+                // Traitement de l'image de couverture
+                if ($request->hasFile('image_couverture_video')) {
+                    $thumbnailFile = $request->file('image_couverture_video');
+                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
+                }
+
+                $type = 'video';
             } elseif ($request->media_type === 'video_link') {
                 $request->validate([
                     'lien_video' => 'required|url',
                 ]);
+
                 $filePath = $request->lien_video;
-            }
-
-            // Déterminer le type pour la base de données
-            $type = $request->media_type === 'audio' ? 'audio' : ($request->media_type === 'video_file' ? 'video' : 'link');
-
-            // Traitement de l'image de couverture pour les vidéos fichiers
-            $thumbnailPath = null;
-            if ($request->media_type === 'video_file' && $request->hasFile('image_couverture')) {
-                $thumbnailFile = $request->file('image_couverture');
-                $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
-                $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
+                $type = 'link';
             }
 
             // Créer l'enregistrement média
@@ -192,68 +206,74 @@ class PodcastController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, Podcast $podcast)
     {
         $request->validate([
             'nom' => 'required|string|max:255',
             'description' => 'required|string',
             'media_type' => 'required|in:audio,video_file,video_link',
-            'image_couverture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image_couverture_audio' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image_couverture_video' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         try {
-            DB::beginTransaction();
-
-            // Récupérer le podcast existant
-            $podcast = Podcast::findOrFail($id);
+            // Récupérer l'ancien média
             $media = $podcast->media;
+            $filePath = $media->url_fichier;
+            $thumbnailPath = $media->thumbnail;
+            $type = null;
 
-            if (!$media) {
-                throw new \Exception('Média introuvable pour ce podcast');
-            }
-
-            $filePath = $media->url_fichier; // par défaut, garder l'ancien fichier
-            $thumbnailPath = $media->thumbnail; // par défaut, garder l'ancienne image
-            $type = $media->type;
-
+            // ====== GESTION DU TYPE MEDIA ======
             if ($request->media_type === 'audio') {
                 $request->validate([
                     'fichier_audio' => 'nullable|file|mimes:mp3,wav,aac,ogg,flac|max:512000',
                 ]);
 
                 if ($request->hasFile('fichier_audio')) {
+                    // Supprimer l'ancien fichier audio
+                    if ($media->type === 'audio' && Storage::disk('public')->exists($filePath)) {
+                        Storage::disk('public')->delete($filePath);
+                    }
+
                     $file = $request->file('fichier_audio');
                     $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
                     $uniqueName = $filename . '_' . now()->format('Ymd_His') . '.mp3';
+                    $filePath = $file->storeAs('audios', $uniqueName, 'public');
+                }
 
-                    // Supprimer ancien fichier audio
-                    if ($media->type === 'audio' && Storage::disk('public')->exists($media->url_fichier)) {
-                        Storage::disk('public')->delete($media->url_fichier);
+                // Traitement de l'image de couverture
+                if ($request->hasFile('image_couverture_audio')) {
+                    // Supprimer l'ancienne miniature
+                    if ($thumbnailPath && Storage::disk('public')->exists($thumbnailPath)) {
+                        Storage::disk('public')->delete($thumbnailPath);
                     }
 
-                    // Stockage
-                    $filePath = $file->storeAs('audios', $uniqueName, 'public');
-                    $type = 'audio';
+                    $thumbnailFile = $request->file('image_couverture_audio');
+                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
                 }
+
+                $type = 'audio';
             } elseif ($request->media_type === 'video_file') {
                 $request->validate([
                     'fichier_video' => 'nullable|file|mimes:mp4,avi,mov,wmv,flv,mkv,webm|max:1024000',
                 ]);
 
                 if ($request->hasFile('fichier_video')) {
+                    // Supprimer l'ancienne vidéo
+                    if ($media->type === 'video' && Storage::disk('public')->exists($filePath)) {
+                        Storage::disk('public')->delete($filePath);
+                    }
+
                     $file = $request->file('fichier_video');
                     $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
                     $uniqueName = $filename . '_' . now()->format('Ymd_His') . '.mp4';
 
-                    // Supprimer ancien fichier vidéo
-                    if ($media->type === 'video' && Storage::disk('public')->exists($media->url_fichier)) {
-                        Storage::disk('public')->delete($media->url_fichier);
-                    }
-
                     // Stockage temporaire
                     $tempPath = $file->storeAs('temp/videos', "tmp_{$uniqueName}");
 
-                    // Compression et export avec FFmpeg
+                    // Traitement FFmpeg
                     FFMpeg::fromDisk('local')
                         ->open($tempPath)
                         ->export()
@@ -262,25 +282,27 @@ class PodcastController extends Controller
                         ->resize(1280, 720)
                         ->save('videos/' . $uniqueName);
 
+                    // Nettoyer le fichier temporaire
                     Storage::disk('local')->delete($tempPath);
 
                     $filePath = 'videos/' . $uniqueName;
-                    $type = 'video';
                 }
 
-                // Traitement de l'image de couverture pour les vidéos fichiers
-                if ($request->media_type === 'video_file' && $request->hasFile('image_couverture')) {
-                    // Supprimer l'ancienne image de couverture
-                    if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
-                        Storage::disk('public')->delete($media->thumbnail);
+                // Traitement de l'image de couverture
+                if ($request->hasFile('image_couverture_video')) {
+                    // Supprimer l'ancienne miniature
+                    if ($thumbnailPath && Storage::disk('public')->exists($thumbnailPath)) {
+                        Storage::disk('public')->delete($thumbnailPath);
                     }
 
-                    $thumbnailFile = $request->file('image_couverture');
+                    $thumbnailFile = $request->file('image_couverture_video');
                     $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
                     $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
                     $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
                 }
-            } elseif ($request->media_type === 'video_link') {
+
+                $type = 'video';
+            } else { // video_link
                 $request->validate([
                     'lien_video' => 'required|url',
                 ]);
@@ -289,26 +311,23 @@ class PodcastController extends Controller
                 $type = 'link';
             }
 
-            // Mise à jour du média
+            // ====== MISE À JOUR BDD ======
             $media->update([
                 'url_fichier' => $filePath,
-                'thumbnail' => $thumbnailPath,
-                'type' => $type,
-                'update_by' => auth()->id(),
+                'thumbnail'   => $thumbnailPath,
+                'type'        => $type,
+                'update_by'   => auth()->id(),
             ]);
 
-            // Mise à jour du podcast
             $podcast->update([
-                'nom' => $request->nom,
+                'nom'        => $request->nom,
                 'description' => $request->description,
-                'update_by' => auth()->id(),
+                'update_by'  => auth()->id(),
             ]);
 
-            DB::commit();
             notify()->success('Succès', 'Podcast mis à jour avec succès.');
             return redirect()->route('podcasts.index');
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('Erreur lors de la mise à jour: ' . $e->getMessage());
             Alert::error('Erreur', 'Impossible de mettre à jour le podcast: ' . $e->getMessage());
             return back()->withInput();
@@ -341,6 +360,56 @@ class PodcastController extends Controller
             DB::rollBack();
             return redirect()->back()
                 ->with('error', 'Erreur lors de la suppression: ' . $e->getMessage());
+        }
+    }
+
+    public function publish($id)
+    {
+        $podcast = Podcast::findOrFail($id);
+        
+        // Vérifier que c'est une vidéo
+        if (!$podcast->media || !in_array($podcast->media->type, ['video', 'link'])) {
+            Alert::error('Erreur', 'Seules les vidéos peuvent être publiées/dépubliées.');
+            return redirect()->back();
+        }
+
+        try {
+            $podcast->media->update([
+                'is_published' => true,
+                'update_by' => auth()->id(),
+            ]);
+
+            notify()->success('Succès', 'Podcast vidéo publié avec succès.');
+            return redirect()->back();
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la publication: ' . $e->getMessage());
+            Alert::error('Erreur', 'Impossible de publier le podcast.');
+            return redirect()->back();
+        }
+    }
+
+    public function unpublish($id)
+    {
+        $podcast = Podcast::findOrFail($id);
+        
+        // Vérifier que c'est une vidéo
+        if (!$podcast->media || !in_array($podcast->media->type, ['video', 'link'])) {
+            Alert::error('Erreur', 'Seules les vidéos peuvent être publiées/dépubliées.');
+            return redirect()->back();
+        }
+
+        try {
+            $podcast->media->update([
+                'is_published' => false,
+                'update_by' => auth()->id(),
+            ]);
+
+            notify()->success('Succès', 'Podcast vidéo dépublié avec succès.');
+            return redirect()->back();
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la dépublication: ' . $e->getMessage());
+            Alert::error('Erreur', 'Impossible de dépublier le podcast.');
+            return redirect()->back();
         }
     }
 }

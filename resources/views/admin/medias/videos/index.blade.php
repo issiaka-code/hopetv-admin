@@ -372,6 +372,12 @@
                                         {{ $video->media_type === 'video_link' ? 'Lien vidéo' : 'Fichier vidéo' }}
                                     </span>
 
+                                    <!-- Badge statut publication -->
+                                    <span class="badge {{ $video->is_published ? 'badge-success' : 'badge-secondary' }}" 
+                                          style="position: absolute; top: 10px; left: 10px; z-index: 10;">
+                                        {{ $video->is_published ? 'Publié' : 'Non publié' }}
+                                    </span>
+
                                     <!-- Corps de la carte -->
                                     <div class="card-body">
                                         <h5 class="card-title" title="{{ $video->nom }}">
@@ -389,7 +395,7 @@
 
                                             <div class="btn-group">
                                                 <!-- Bouton Voir -->
-                                                <button class="btn btn-sm btn-outline-info view-video-btn rounded"
+                                                <button class="btn btn-sm btn-outline-info view-video-btn rounded" title="Voir la vidéo"
                                                     data-video-url="{{ $video->thumbnail_url }}"
                                                     data-video-name="{{ $video->nom }}" data-title="{{ $video->nom }}"
                                                     data-description="{{ $video->description }}"
@@ -398,7 +404,7 @@
                                                 </button>
 
                                                 <!-- Bouton Modifier -->
-                                                <button class="btn btn-sm btn-outline-primary edit-video-btn mx-1 rounded"
+                                                <button class="btn btn-sm btn-outline-primary edit-video-btn mx-1 rounded" title="Modifier la vidéo"
                                                     data-video-id="{{ $video->id }}">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
@@ -408,11 +414,26 @@
                                                     class="d-inline delete-form">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded"
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded" title="Supprimer la vidéo"
                                                         onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette vidéo ?')">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
-                                                </form>
+                                                </form>                                         
+                                                @if($video->is_published)
+                                                    <form action="{{ route('videos.unpublish', $video->id) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning rounded mx-1" title="Dépublier la vidéo">
+                                                            <i class="fas fa-power-off"></i> {{-- Icône arrêt/power --}}
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <form action="{{ route('videos.publish', $video->id) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-sm btn-outline-success rounded mx-1" title="Publier la vidéo">
+                                                            <i class="fas fa-power-off"></i> {{-- Icône validation --}}
+                                                        </button>
+                                                    </form>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>

@@ -66,7 +66,7 @@
                                 <div class="custom-file">
                                     <input type="file" name="image_couverture" id="addVideoThumbnail"
                                         class="custom-file-input @error('image_couverture') is-invalid @enderror"
-                                        accept="image/*" required>
+                                        accept="image/*">
                                     <label class="custom-file-label" for="addVideoThumbnail">Choisir une image</label>
                                     @error('image_couverture')
                                         <div class="invalid-feedback">{{ $message }}</div>

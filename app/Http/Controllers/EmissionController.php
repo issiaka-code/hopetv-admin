@@ -42,7 +42,7 @@ class EmissionController extends Controller
         $emissions = $query->paginate(12);
 
         // Préparer chaque variable pour la vue et JS
-        $emissionsData = $emissions->map(function ($emission) {
+        $emissionsData = collect($emissions->items())->map(function ($emission) {
             $isAudio = $emission->media && $emission->media->type === 'audio';
             $isVideoLink = $emission->media && $emission->media->type === 'link';
             $isVideoFile = $emission->media && $emission->media->type === 'video';
@@ -88,6 +88,7 @@ class EmissionController extends Controller
                 'thumbnail_url' => $thumbnailUrl,
                 'video_url' => $isVideoFile ? asset('storage/' . $emission->media->url_fichier) : $thumbnailUrl,
                 'has_thumbnail' => $emission->media->thumbnail ? true : false,
+                'is_published' => $emission->media->is_published ?? true,
             ];
         });
 
@@ -113,6 +114,7 @@ class EmissionController extends Controller
             if ($request->media_type === 'audio') {
                 $request->validate([
                     'fichier_audio' => 'required|file|mimes:mp3,wav,aac,ogg,flac|max:512000',
+                    'image_couverture_audio' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                 ]);
 
                 $file = $request->file('fichier_audio');
@@ -124,7 +126,7 @@ class EmissionController extends Controller
             } elseif ($request->media_type === 'video') {
                 $request->validate([
                     'fichier_video' => 'required|file|mimes:mp4,avi,mov,wmv,flv,mkv,webm|max:1024000',
-                    'image_couverture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+                    'image_couverture_video' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                 ]);
 
                 $file = $request->file('fichier_video');
@@ -155,6 +157,7 @@ class EmissionController extends Controller
             } elseif ($request->media_type === 'pdf') {
                 $request->validate([
                     'fichier_pdf' => 'required|file|mimes:pdf|max:20480',
+                    'image_couverture_pdf' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                 ]);
 
                 $file = $request->file('fichier_pdf');
@@ -165,10 +168,20 @@ class EmissionController extends Controller
                 $filePath = $file->storeAs('pdfs', $uniqueName, 'public');
             }
 
-            // Traitement de l'image de couverture pour tous les types de médias
+            // Traitement de l'image de couverture
             $thumbnailPath = null;
-            if (in_array($request->media_type, ['video', 'audio', 'pdf']) && $request->hasFile('image_couverture')) {
-                $thumbnailFile = $request->file('image_couverture');
+            if ($request->media_type === 'audio' && $request->hasFile('image_couverture_audio')) {
+                $thumbnailFile = $request->file('image_couverture_audio');
+                $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
+            } elseif ($request->media_type === 'video' && $request->hasFile('image_couverture_video')) {
+                $thumbnailFile = $request->file('image_couverture_video');
+                $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
+            } elseif ($request->media_type === 'pdf' && $request->hasFile('image_couverture_pdf')) {
+                $thumbnailFile = $request->file('image_couverture_pdf');
                 $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
                 $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
                 $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
@@ -256,6 +269,19 @@ class EmissionController extends Controller
                     $filePath = $file->storeAs('audios', $uniqueName, 'public');
                     $type = 'audio';
                 }
+
+                // Traitement de l'image de couverture pour les audios
+                if ($request->hasFile('image_couverture_audio')) {
+                    // Supprimer l'ancienne image de couverture
+                    if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
+                        Storage::disk('public')->delete($media->thumbnail);
+                    }
+
+                    $thumbnailFile = $request->file('image_couverture_audio');
+                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
+                }
             } elseif ($request->media_type === 'video') {
                 $request->validate([
                     'fichier_video' => 'nullable|file|mimes:mp4,avi,mov,wmv,flv,mkv,webm|max:1024000',
@@ -289,18 +315,18 @@ class EmissionController extends Controller
                     $type = 'video';
                 }
 
-            // Traitement de l'image de couverture pour tous les types de médias
-            if (in_array($request->media_type, ['video', 'audio', 'pdf']) && $request->hasFile('image_couverture')) {
-                // Supprimer l'ancienne image de couverture
-                if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
-                    Storage::disk('public')->delete($media->thumbnail);
-                }
+                // Traitement de l'image de couverture pour les vidéos
+                if ($request->hasFile('image_couverture_video')) {
+                    // Supprimer l'ancienne image de couverture
+                    if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
+                        Storage::disk('public')->delete($media->thumbnail);
+                    }
 
-                $thumbnailFile = $request->file('image_couverture');
-                $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
-                $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
-            }
+                    $thumbnailFile = $request->file('image_couverture_video');
+                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
+                }
             } elseif ($request->media_type === 'link') {
                 $request->validate([
                     'lien_video' => 'required|url',
@@ -326,6 +352,19 @@ class EmissionController extends Controller
                     // Stockage
                     $filePath = $file->storeAs('pdfs', $uniqueName, 'public');
                     $type = 'pdf';
+                }
+
+                // Traitement de l'image de couverture pour les PDFs
+                if ($request->hasFile('image_couverture_pdf')) {
+                    // Supprimer l'ancienne image de couverture
+                    if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
+                        Storage::disk('public')->delete($media->thumbnail);
+                    }
+
+                    $thumbnailFile = $request->file('image_couverture_pdf');
+                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
+                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
                 }
             }
 
@@ -381,6 +420,54 @@ class EmissionController extends Controller
             DB::rollBack();
             return redirect()->back()
                 ->with('error', 'Erreur lors de la suppression: ' . $e->getMessage());
+        }
+    }
+
+    public function publish($id)
+    {
+        $emission = Emission::findOrFail($id);
+        
+        if (!$emission->media || !in_array($emission->media->type, ['video', 'link'])) {
+            Alert::error('Erreur', 'Seules les vidéos peuvent être publiées/dépubliées.');
+            return redirect()->back();
+        }
+
+        try {
+            $emission->media->update([
+                'is_published' => true,
+                'update_by' => auth()->id(),
+            ]);
+
+            notify()->success('Succès', 'Émission vidéo publiée avec succès.');
+            return redirect()->back();
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la publication: ' . $e->getMessage());
+            Alert::error('Erreur', 'Impossible de publier l\'émission.');
+            return redirect()->back();
+        }
+    }
+
+    public function unpublish($id)
+    {
+        $emission = Emission::findOrFail($id);
+        
+        if (!$emission->media || !in_array($emission->media->type, ['video', 'link'])) {
+            Alert::error('Erreur', 'Seules les vidéos peuvent être publiées/dépubliées.');
+            return redirect()->back();
+        }
+
+        try {
+            $emission->media->update([
+                'is_published' => false,
+                'update_by' => auth()->id(),
+            ]);
+
+            notify()->success('Succès', 'Émission vidéo dépubliée avec succès.');
+            return redirect()->back();
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la dépublication: ' . $e->getMessage());
+            Alert::error('Erreur', 'Impossible de dépublier l\'émission.');
+            return redirect()->back();
         }
     }
 }

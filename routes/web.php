@@ -39,11 +39,18 @@ Route::get('/dashboard', function () {
 Route::middleware('auth')->group(function () {
 
     Route::resource('videos', VideoController::class);
+    Route::post('videos/{id}/publish', [VideoController::class, 'publish'])->name('videos.publish');
+    Route::post('videos/{id}/unpublish', [VideoController::class, 'unpublish'])->name('videos.unpublish');
     Route::resource('podcasts', PodcastController::class);
+    Route::post('podcasts/{id}/publish', [PodcastController::class, 'publish'])->name('podcasts.publish');
+    Route::post('podcasts/{id}/unpublish', [PodcastController::class, 'unpublish'])->name('podcasts.unpublish');
     Route::resource('temoignages', TemoignageController::class);
+    Route::post('temoignages/{id}/publish', [TemoignageController::class, 'publish'])->name('temoignages.publish');
+    Route::post('temoignages/{id}/unpublish', [TemoignageController::class, 'unpublish'])->name('temoignages.unpublish');
     Route::resource('emissions', EmissionController::class);
-    Route::post('emissions/{id}/toggle_status', [EmissionController::class, 'toggleStatus'])
-        ->name('emissions.toggle_status');
+    Route::post('emissions/{id}/publish', [EmissionController::class, 'publish'])->name('emissions.publish');
+    Route::post('emissions/{id}/unpublish', [EmissionController::class, 'unpublish'])->name('emissions.unpublish');
+    Route::post('emissions/{id}/toggle_status', [EmissionController::class, 'toggleStatus'])->name('emissions.toggle_status');
     Route::resource('playlists', PlaylistController::class)->except(['show']);
     Route::get('playlists/{id}/show', [PlaylistController::class, 'show'])->name('playlists.show');
     Route::resource('info-bulles', InfoBulleController::class);
@@ -51,8 +58,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('liens-utiles', LienUtileController::class);
     Route::patch('/{id}/toggle-status', [InfoBulleController::class, 'toggleStatus'])->name('info-bulles.toggle-status');
     Route::resource('info_importantes', InfoImportanteController::class);
-    Route::post('info_importantes/{id}/toggle_status', [InfoImportanteController::class, 'toggleStatus'])
-        ->name('info_importantes.toggle_status');
+    Route::post('info_importantes/{id}/toggle_status', [InfoImportanteController::class, 'toggleStatus'])->name('info_importantes.toggle_status');
 });
 
 require __DIR__ . '/auth.php';

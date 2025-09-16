@@ -73,6 +73,27 @@
                                 <small>Fichier actuel: <span id="editCurrentAudioName"></span></small>
                             </div>
                         </div>
+                        
+                        <div class="form-group">
+                            <label class="font-weight-bold">Image de couverture</label>
+                            <div class="custom-file">
+                                <input type="file" name="image_couverture_audio" id="editAudioImageFile"
+                                    class="custom-file-input @error('image_couverture_audio') is-invalid @enderror"
+                                    accept="image/*">
+                                <label class="custom-file-label" for="editAudioImageFile">Choisir une nouvelle image</label>
+                                @error('image_couverture_audio')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <small class="form-text text-muted">Formats acceptés: JPG, PNG, GIF (max 2MB)</small>
+                            
+                            <div id="editCurrentAudioThumbnail" class="mt-2">
+                                <small>Image actuelle: <span id="editCurrentAudioThumbnailName"></span></small>
+                                <div class="mt-1">
+                                    <img id="editCurrentAudioThumbnailPreview" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 100px; max-height: 60px; display: none;">
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Section Fichier Vidéo pour ÉDITION -->
@@ -98,11 +119,11 @@
                         <div class="form-group">
                             <label class="font-weight-bold">Image de couverture</label>
                             <div class="custom-file">
-                                <input type="file" name="image_couverture" id="editTemoignageThumbnail"
-                                    class="custom-file-input @error('image_couverture') is-invalid @enderror"
+                                <input type="file" name="image_couverture_video" id="editTemoignageThumbnail"
+                                    class="custom-file-input @error('image_couverture_video') is-invalid @enderror"
                                     accept="image/*">
                                 <label class="custom-file-label" for="editTemoignageThumbnail">Choisir une nouvelle image</label>
-                                @error('image_couverture')
+                                @error('image_couverture_video')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -110,9 +131,6 @@
                             
                             <div id="editCurrentThumbnail" class="mt-2">
                                 <small>Image actuelle: <span id="editCurrentThumbnailName"></span></small>
-                                <div class="mt-1">
-                                    <img id="editCurrentThumbnailPreview" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 100px; max-height: 60px; display: none;">
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -153,6 +171,24 @@
 
                             <div id="editCurrentPdf" class="mt-2">
                                 <small>Fichier actuel: <span id="editCurrentPdfName"></span></small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="font-weight-bold">Image de couverture</label>
+                            <div class="custom-file">
+                                <input type="file" name="image_couverture_pdf" id="editPdfImageFile"
+                                    class="custom-file-input @error('image_couverture_pdf') is-invalid @enderror"
+                                    accept="image/*">
+                                <label class="custom-file-label" for="editPdfImageFile">Choisir une nouvelle image</label>
+                                @error('image_couverture_pdf')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <small class="form-text text-muted">Formats acceptés: JPG, PNG, GIF (max 2MB)</small>
+                            
+                            <div id="editCurrentPdfThumbnail" class="mt-2">
+                                <small>Image actuelle: <span id="editCurrentPdfThumbnailName"></span></small>   
                             </div>
                         </div>
                     </div>

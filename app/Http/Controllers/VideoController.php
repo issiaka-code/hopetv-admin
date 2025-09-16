@@ -76,6 +76,7 @@ class VideoController extends Controller
                 'thumbnail_url' => $thumbnailUrl,
                 'video_url' => $isVideoFile ? asset('storage/' . $video->media->url_fichier) : $thumbnailUrl,
                 'has_thumbnail' => $isVideoFile && $video->media->thumbnail ? true : false,
+                'is_published' => $video->media->is_published ?? true,
             ];
         });
 
@@ -143,7 +144,7 @@ class VideoController extends Controller
                 // Créer l'enregistrement média
                 $media = Media::create([
                     'url_fichier' => $filePath,
-                    'thumbnail' => $thumbnailPath,
+                    'thumbnail' => $thumbnailPath ?? null,
                     'type' => $type,
                     'insert_by' => auth()->id(),
                     'update_by' => auth()->id(),
@@ -306,6 +307,52 @@ class VideoController extends Controller
             DB::rollBack();
             return redirect()->back()
                 ->with('error', 'Erreur lors de la suppression: ' . $e->getMessage());
+        }
+    }
+
+    public function publish($id)
+    {
+        $video = Video::findOrFail($id);
+        try {
+            DB::beginTransaction();
+
+            if ($video->media) {
+                $video->media->update([
+                    'is_published' => true,
+                    'update_by' => auth()->id(),
+                ]);
+            }
+
+            DB::commit();
+            notify()->success('Succès', 'Vidéo publiée avec succès.');
+            return redirect()->route('videos.index');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            notify()->error('Erreur', 'Impossible de publier la vidéo: ' . $e->getMessage());
+            return redirect()->back();
+        }
+    }
+
+    public function unpublish($id)
+    {
+        $video = Video::findOrFail($id);
+        try {
+            DB::beginTransaction();
+
+            if ($video->media) {
+                $video->media->update([
+                    'is_published' => false,
+                    'update_by' => auth()->id(),
+                ]);
+            }
+
+            DB::commit();
+            notify()->success('Succès', 'Vidéo dépubliée avec succès.');
+            return redirect()->route('videos.index');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            notify()->error('Erreur', 'Impossible de dépublier la vidéo: ' . $e->getMessage());
+            return redirect()->back();
         }
     }
 }

@@ -67,6 +67,20 @@
                                 </div>
                                 <small class="form-text text-muted">Formats acceptés: MP3, WAV, AAC, etc. (max 50MB)</small>
                             </div>
+                            
+                            <div class="form-group">
+                                <label class="font-weight-bold">Image de couverture <span class="text-danger">*</span></label>
+                                <div class="custom-file">
+                                    <input type="file" name="image_couverture_audio" id="addAudioImageFile"
+                                        class="custom-file-input @error('image_couverture_audio') is-invalid @enderror"
+                                        accept="image/*">
+                                    <label class="custom-file-label" for="addAudioImageFile">Choisir une image</label>
+                                    @error('image_couverture_audio')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <small class="form-text text-muted">Formats acceptés: JPG, PNG, GIF (max 2MB)</small>
+                            </div>
                         </div>
 
                         <!-- Section Fichier Vidéo -->
@@ -88,11 +102,11 @@
                             <div class="form-group">
                                 <label class="font-weight-bold">Image de couverture <span class="text-danger">*</span></label>
                                 <div class="custom-file">
-                                    <input type="file" name="image_couverture" id="addTemoignageThumbnail"
-                                        class="custom-file-input @error('image_couverture') is-invalid @enderror"
+                                    <input type="file" name="image_couverture_video" id="addVideoImageFile"
+                                        class="custom-file-input @error('image_couverture_video') is-invalid @enderror"
                                         accept="image/*">
-                                    <label class="custom-file-label" for="addTemoignageThumbnail">Choisir une image</label>
-                                    @error('image_couverture')
+                                    <label class="custom-file-label" for="addVideoImageFile">Choisir une image</label>
+                                    @error('image_couverture_video')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -121,13 +135,27 @@
                                 <div class="custom-file">
                                     <input type="file" name="fichier_pdf" id="addPdfFile"
                                         class="custom-file-input @error('fichier_pdf') is-invalid @enderror"
-                                        accept=".pdf" required>
+                                        accept=".pdf">
                                     <label class="custom-file-label" for="addPdfFile">Choisir un fichier PDF</label>
                                     @error('fichier_pdf')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
                                 <small class="form-text text-muted">Format accepté: PDF (max 20MB)</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="font-weight-bold">Image de couverture <span class="text-danger">*</span></label>
+                                <div class="custom-file">
+                                    <input type="file" name="image_couverture_pdf" id="addPdfImageFile"
+                                        class="custom-file-input @error('image_couverture_pdf') is-invalid @enderror"
+                                        accept="image/*">
+                                    <label class="custom-file-label" for="addPdfImageFile">Choisir une image</label>
+                                    @error('image_couverture_pdf')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <small class="form-text text-muted">Formats acceptés: JPG, PNG, GIF (max 2MB)</small>
                             </div>
                         </div>
                     </div>

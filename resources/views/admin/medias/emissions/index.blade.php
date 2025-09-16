@@ -422,6 +422,14 @@
                                                                     : $media_type))),
                                                 ) }}
                                             </span>
+
+                                            <!-- Badge statut publication (uniquement pour les vidéos) -->
+                                            @if(in_array($media_type, ['video_link', 'video_file']))
+                                                <span class="badge {{ $is_published ? 'badge-success' : 'badge-secondary' }}" 
+                                                      style="position: absolute; top: 10px; left: 10px; z-index: 10;">
+                                                    {{ $is_published ? 'Publié' : 'Non publié' }}
+                                                </span>
+                                            @endif
                                         </div>
                                     </div>
 
@@ -447,6 +455,27 @@
                                                     data-emission-id="{{ $id }}">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
+
+                                                <!-- Boutons Publier/Dépublier (uniquement pour les vidéos) -->
+                                                @if(in_array($media_type, ['video_link', 'video_file']))
+                                                    @if($is_published)
+                                                        <form action="{{ route('emissions.unpublish', $id) }}" method="POST" class="d-inline">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-sm btn-outline-warning mx-1 rounded" 
+                                                                    title="Dépublier cette émission">
+                                                                <i class="fas fa-power-off"></i>
+                                                            </button>
+                                                        </form>
+                                                    @else
+                                                        <form action="{{ route('emissions.publish', $id) }}" method="POST" class="d-inline">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-sm btn-outline-success mx-1 rounded" 
+                                                                    title="Publier cette émission">
+                                                                <i class="fas fa-power-off"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                @endif
 
                                                 <form action="{{ route('emissions.destroy', $id) }}" method="POST"
                                                     class="d-inline delete-form">
@@ -497,24 +526,24 @@
                 const selectedType = $(this).val();
                 $('#addAudioFileSection, #addVideoFileSection, #addVideoLinkSection, #addPdfFileSection')
                     .addClass('d-none');
-                $('#addAudioFile, #addVideoFile, #addVideoLink, #addPdfFile').removeAttr('required');
+                $('#addAudioFile, #addVideoFile, #addVideoLink, #addPdfFile, #addAudioImageFile, #addVideoImageFile, #addPdfImageFile').removeAttr('required');
 
                 if (selectedType === 'audio') {
                     $('#addAudioFileSection').removeClass('d-none');
-                    $('#addAudioFile').attr('required', 'required');
+                    $('#addAudioFile, #addAudioImageFile').attr('required', 'required');
                 } else if (selectedType === 'video') {
                     $('#addVideoFileSection').removeClass('d-none');
-                    $('#addVideoFile').attr('required', 'required');
+                    $('#addVideoFile, #addVideoImageFile').attr('required', 'required');
                 } else if (selectedType === 'link') {
                     $('#addVideoLinkSection').removeClass('d-none');
                     $('#addVideoLink').attr('required', 'required');
                 } else if (selectedType === 'pdf') {
                     $('#addPdfFileSection').removeClass('d-none');
-                    $('#addPdfFile').attr('required', 'required');
+                    $('#addPdfFile, #addPdfImageFile').attr('required', 'required');
                 }
             });
 
-            $('#addAudioFile, #addVideoFile, #addPdfFile, #addEmissionThumbnail').on('change', function() {
+            $('#addAudioFile, #addVideoFile, #addPdfFile, #addAudioImageFile, #addVideoImageFile, #addPdfImageFile').on('change', function() {
                 let fileName = $(this).val().split('\\').pop();
                 $(this).next('.custom-file-label').addClass("selected").html(fileName);
             });
@@ -523,7 +552,7 @@
                 $('#addEmissionForm')[0].reset();
                 $('#addAudioFile, #addVideoFile, #addPdfFile').next('.custom-file-label').html(
                     'Choisir un fichier');
-                $('#addEmissionThumbnail').next('.custom-file-label').html('Choisir une image');
+                $('#addAudioImageFile, #addVideoImageFile, #addPdfImageFile').next('.custom-file-label').html('Choisir une image');
                 $('#addMediaTypeAudio').prop('checked', true).trigger('change');
             });
 
@@ -546,7 +575,7 @@
                 }
             });
 
-            $('#editAudioFile, #editVideoFile, #editPdfFile, #editEmissionThumbnail').on('change', function() {
+            $('#editAudioFile, #editVideoFile, #editPdfFile, #editAudioImageFile, #editVideoImageFile, #editPdfImageFile').on('change', function() {
                 let fileName = $(this).val().split('\\').pop();
                 $(this).next('.custom-file-label').addClass("selected").html(fileName ||
                     'Choisir un nouveau fichier');
