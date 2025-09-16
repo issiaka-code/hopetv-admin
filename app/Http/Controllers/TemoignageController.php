@@ -78,7 +78,6 @@ class TemoignageController extends Controller
                     $thumbnailUrl = null; // Pas d'image, on utilisera l'icône par défaut
                 }
             }
-            dd($thumbnailUrl);
             return (object)[
                 'id' => $temoignage->id,
                 'nom' => $temoignage->nom,
