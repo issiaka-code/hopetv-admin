@@ -89,9 +89,6 @@
                             
                             <div id="editCurrentAudioThumbnail" class="mt-2">
                                 <small>Image actuelle: <span id="editCurrentAudioThumbnailName"></span></small>
-                                <div class="mt-1">
-                                    <img id="editCurrentAudioThumbnailPreview" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 100px; max-height: 60px; display: none;">
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -131,9 +128,6 @@
                             
                             <div id="editCurrentVideoThumbnail" class="mt-2">
                                 <small>Image actuelle: <span id="editCurrentVideoThumbnailName"></span></small>
-                                <div class="mt-1">
-                                    <img id="editCurrentVideoThumbnailPreview" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 100px; max-height: 60px; display: none;">
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -153,48 +147,6 @@
 
                             <div id="editCurrentLink" class="mt-2">
                                 <small>Lien actuel: <span id="editCurrentLinkValue"></span></small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section Fichier PDF pour ÉDITION -->
-                    <div id="editPdfFileSection" class="d-none">
-                        <div class="form-group">
-                            <label class="font-weight-bold">Fichier PDF</label>
-                            <div class="custom-file">
-                                <input type="file" name="fichier_pdf" id="editPdfFile"
-                                    class="custom-file-input @error('fichier_pdf') is-invalid @enderror"
-                                    accept=".pdf">
-                                <label class="custom-file-label" for="editPdfFile">Choisir un nouveau fichier PDF</label>
-                                @error('fichier_pdf')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <small class="form-text text-muted">Format accepté: PDF (max 20MB)</small>
-
-                            <div id="editCurrentPdf" class="mt-2">
-                                <small>Fichier actuel: <span id="editCurrentPdfName"></span></small>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="font-weight-bold">Image de couverture</label>
-                            <div class="custom-file">
-                                <input type="file" name="image_couverture_pdf" id="editPdfThumbnail"
-                                    class="custom-file-input @error('image_couverture_pdf') is-invalid @enderror"
-                                    accept="image/*">
-                                <label class="custom-file-label" for="editPdfThumbnail">Choisir une nouvelle image</label>
-                                @error('image_couverture_pdf')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <small class="form-text text-muted">Formats acceptés: JPG, PNG, GIF (max 2MB)</small>
-                            
-                            <div id="editCurrentPdfThumbnail" class="mt-2">
-                                <small>Image actuelle: <span id="editCurrentPdfThumbnailName"></span></small>
-                                <div class="mt-1">
-                                    <img id="editCurrentPdfThumbnailPreview" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 100px; max-height: 60px; display: none;">
-                                </div>
                             </div>
                         </div>
                     </div>

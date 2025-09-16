@@ -91,7 +91,6 @@ class TemoignageController extends Controller
                 'is_published' => $temoignage->media->is_published ?? true,
             ];
         });
-
         // Envoyer chaque témoignage comme variable séparée
         return view('admin.medias.temoignages.index', [
             'temoignages' => $temoignages,

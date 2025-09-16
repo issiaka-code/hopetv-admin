@@ -377,11 +377,7 @@
                                 $created_at = $temoignageData->created_at;
                                 $media_type = $temoignageData->media_type;
                                 $thumbnail_url = $temoignageData->thumbnail_url;
-                                // Récupérer l'objet témoignage original pour accéder à la relation media
-                                $temoignage = $temoignages->find($id);
-                                
-                                // Utiliser directement la relation media pour l'URL
-                                $media_url = $temoignage && $temoignage->media ? asset('storage/' . $temoignage->media->url_fichier) : '';
+                                $media_url = $temoignageData->media_url;
                                 $is_published = $temoignageData->is_published ?? false;
                             @endphp
 
@@ -392,6 +388,7 @@
                                             data-temoignage-url="{{ $thumbnail_url }}"
                                             data-video-url="{{ $temoignageData->video_url ?? '' }}"
                                             data-temoignage-name="{{ $nom }}"
+                                            data-media-url="{{ $media_url }}"
                                             data-media-type="{{ $media_type }}"
                                             data-has-thumbnail="{{ $temoignageData->has_thumbnail ? 'true' : 'false' }}">
 
@@ -667,7 +664,6 @@
                 const mediaType = $(this).data('media-type');
                 const temoignageDescription = $(this).closest('.temoignage-card').find('.card-text').attr(
                     'title') || '';
-
                 // Masquer tous les lecteurs et réinitialiser
                 $('#audioPlayerContainer, #videoPlayerContainer, #iframePlayerContainer, #pdfViewerContainer')
                     .addClass(
@@ -707,9 +703,14 @@
                 } else if (mediaType === 'pdf') {
                     if (mediaUrl) {
                         console.log('Loading PDF:', mediaUrl);
-                        $('#modalPdfViewer').attr('src', mediaUrl + '#toolbar=0');
+                        // Charger le PDF avec les contrôles natifs du navigateur
+                        $('#modalPdfViewer').attr('src', mediaUrl + '#view=FitH&toolbar=1&navpanes=1');
+                        $('#pdfDownload').attr('href', mediaUrl);
                         $('#pdfViewerContainer').removeClass('d-none');
                         $('#mediaTypeBadge').text('PDF').removeClass('d-none');
+                        
+                        // Initialiser les contrôles PDF
+                        initPdfControls(mediaUrl);
                     } else {
                         console.log('No PDF URL found');
                     }
