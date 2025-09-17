@@ -355,7 +355,8 @@
                                                     frameborder="0" allowfullscreen></iframe>
                                             @else
                                                 @if ($video->has_thumbnail)
-                                                    <img src="{{ $video->thumbnail_url }}" alt="{{ $video->nom }}" class="w-100 h-100">
+                                                    <img src="{{ $video->thumbnail_url }}" alt="{{ $video->nom }}"
+                                                        class="w-100 h-100">
                                                 @else
                                                     <video src="{{ $video->video_url }}"></video>
                                                 @endif
@@ -373,8 +374,8 @@
                                     </span>
 
                                     <!-- Badge statut publication -->
-                                    <span class="badge {{ $video->is_published ? 'badge-success' : 'badge-secondary' }}" 
-                                          style="position: absolute; top: 10px; left: 10px; z-index: 10;">
+                                    <span class="badge {{ $video->is_published ? 'badge-success' : 'badge-secondary' }}"
+                                        style="position: absolute; top: 10px; left: 10px; z-index: 10;">
                                         {{ $video->is_published ? 'Publié' : 'Non publié' }}
                                     </span>
 
@@ -395,8 +396,8 @@
 
                                             <div class="btn-group">
                                                 <!-- Bouton Voir -->
-                                                <button class="btn btn-sm btn-outline-info view-video-btn rounded" title="Voir la vidéo"
-                                                    data-video-url="{{ $video->thumbnail_url }}"
+                                                <button class="btn btn-sm btn-outline-info view-video-btn rounded"
+                                                    title="Voir la vidéo" data-video-url="{{ $video->thumbnail_url }}"
                                                     data-video-name="{{ $video->nom }}" data-title="{{ $video->nom }}"
                                                     data-description="{{ $video->description }}"
                                                     data-media-type="{{ $video->media_type }}">
@@ -404,8 +405,8 @@
                                                 </button>
 
                                                 <!-- Bouton Modifier -->
-                                                <button class="btn btn-sm btn-outline-primary edit-video-btn mx-1 rounded" title="Modifier la vidéo"
-                                                    data-video-id="{{ $video->id }}">
+                                                <button class="btn btn-sm btn-outline-primary edit-video-btn mx-1 rounded"
+                                                    title="Modifier la vidéo" data-video-id="{{ $video->id }}">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
 
@@ -414,22 +415,29 @@
                                                     class="d-inline delete-form">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded" title="Supprimer la vidéo"
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded"
+                                                        title="Supprimer la vidéo"
                                                         onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette vidéo ?')">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
-                                                </form>                                         
-                                                @if($video->is_published)
-                                                    <form action="{{ route('videos.unpublish', $video->id) }}" method="POST" class="d-inline">
+                                                </form>
+                                                @if ($video->is_published)
+                                                    <form action="{{ route('videos.unpublish', $video->id) }}"
+                                                        method="POST" class="d-inline">
                                                         @csrf
-                                                        <button type="submit" class="btn btn-sm btn-outline-warning rounded mx-1" title="Dépublier la vidéo">
+                                                        <button type="submit"
+                                                            class="btn btn-sm btn-outline-warning rounded mx-1"
+                                                            title="Dépublier la vidéo">
                                                             <i class="fas fa-power-off"></i> Dépublier
                                                         </button>
                                                     </form>
                                                 @else
-                                                    <form action="{{ route('videos.publish', $video->id) }}" method="POST" class="d-inline">
+                                                    <form action="{{ route('videos.publish', $video->id) }}"
+                                                        method="POST" class="d-inline">
                                                         @csrf
-                                                        <button type="submit" class="btn btn-sm btn-outline-success rounded mx-1" title="Publier la vidéo">
+                                                        <button type="submit"
+                                                            class="btn btn-sm btn-outline-success rounded mx-1"
+                                                            title="Publier la vidéo">
                                                             <i class="fas fa-power-off"></i> Publier
                                                         </button>
                                                     </form>
@@ -581,12 +589,13 @@
                                     .media.url_fichier);
                                 $('#editCurrentVideo').show();
                                 $('#editCurrentLink').hide();
-                                
+
                                 // Gestion de l'image de couverture
                                 if (data.media.thumbnail) {
                                     const thumbnailName = data.media.thumbnail.split('/').pop();
                                     $('#editCurrentThumbnailName').text(thumbnailName);
-                                    $('#editCurrentThumbnailPreview').attr('src', '/storage/' + data.media.thumbnail).show();
+                                    $('#editCurrentThumbnailPreview').attr('src', '/storage/' +
+                                        data.media.thumbnail).show();
                                     $('#editCurrentThumbnail').show();
                                 } else {
                                     $('#editCurrentThumbnail').hide();
@@ -616,7 +625,8 @@
                 const videoUrl = $(this).data('video-url');
                 const videoName = $(this).data('video-name');
                 const isLink = $(this).data('is-link') === 'true' || $(this).data('is-link') === true;
-                const hasThumbnail = $(this).data('has-thumbnail') === 'true' || $(this).data('has-thumbnail') === true;
+                const hasThumbnail = $(this).data('has-thumbnail') === 'true' || $(this).data(
+                    'has-thumbnail') === true;
                 const videoDescription = $(this).closest('.video-card').find('.card-text').attr('title') ||
                     '';
 
@@ -648,7 +658,57 @@
                 // Afficher le modal
                 $('#videoViewModal').modal('show');
             });
+            // Gestion des images multiples
+            $('#addImageFiles').on('change', function() {
+                const files = Array.from(this.files);
+                const $customFile = $(this).closest('.custom-file');
+                const $label = $(this).next('.custom-file-label');
 
+                if (files.length === 0) {
+                    $label.removeClass('selected').html('Choisir des images');
+                    $customFile.next('.file-selected-info').remove();
+                    return;
+                }
+
+                // Mise à jour du label
+                $label.addClass('selected').html(
+                    files.length === 1 ? files[0].name : `${files.length} fichiers sélectionnés`
+                );
+
+                // Création de l'affichage des fichiers
+                let $info = $customFile.next('.file-selected-info');
+                if ($info.length === 0) {
+                    $info = $(`
+            <div class="file-selected-info mt-2 p-2 bg-light rounded">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong>Fichiers sélectionnés (${files.length})</strong>
+                </div>
+                <div class="file-list"></div>
+            </div>
+        `);
+                    $customFile.after($info);
+                }
+
+                // Affichage de la liste
+                let fileListHtml = files.slice(0, 5).map(file => `
+        <div class="d-flex justify-content-between align-items-center border-bottom py-1">
+            <span class="text-truncate" style="max-width: 70%;" title="${file.name}">
+                ${file.name}
+            </span>
+            <small class="text-muted">${formatFileSize(file.size)}</small>
+        </div>
+    `).join('');
+
+                if (files.length > 5) {
+                    fileListHtml += `
+            <div class="text-center mt-1">
+                <small class="text-muted">+ ${files.length - 5} autres fichiers</small>
+            </div>
+        `;
+                }
+
+                $info.find('.file-list').html(fileListHtml);
+            });
             // Nettoyage quand le modal se ferme
             $('#videoViewModal').on('hidden.bs.modal', function() {
                 const videoPlayer = $('#modalVideoPlayer')[0];

@@ -390,8 +390,7 @@
                                             data-temoignage-url="{{ $thumbnail_url }}"
                                             data-video-url="{{ $temoignageData->video_url ?? '' }}"
                                             data-temoignage-name="{{ $nom }}"
-                                            data-media-url="{{ $media_url }}" 
-                                            data-media-type="{{ $media_type }}"
+                                            data-media-url="{{ $media_url }}" data-media-type="{{ $media_type }}"
                                             data-images="{{ $images ? json_encode($images) : '[]' }}"
                                             data-has-thumbnail="{{ $temoignageData->has_thumbnail ? 'true' : 'false' }}">
 
@@ -412,7 +411,20 @@
                                                     @elseif($media_type === 'pdf')
                                                         <i class="fas fa-file-pdf text-white" style="font-size: 3rem;"></i>
                                                     @elseif($media_type === 'images')
-                                                        <i class="fas fa-images text-white" style="font-size: 3rem;"></i>
+                                                        @if ($temoignageData->has_thumbnail)
+                                                            <img src="{{ $thumbnail_url }}" alt="{{ $nom }}"
+                                                                style="width: 100%; height: 100%; object-fit: cover;">
+                                                        @elseif(isset($images) && count($images) > 0)
+                                                            <img src="{{ asset('storage/' . $images[0]) }}"
+                                                                alt="{{ $nom }}"
+                                                                style="width: 100%; height: 100%; object-fit: cover;">
+                                                        @else
+                                                            <div class="default-thumbnail d-flex align-items-center justify-content-center"
+                                                                style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                                                <i class="fas fa-images text-white"
+                                                                    style="font-size: 3rem;"></i>
+                                                            </div>
+                                                        @endif
                                                     @endif
                                                 </div>
                                             @endif
@@ -464,9 +476,7 @@
                                                     data-title="{{ $nom }}"
                                                     data-description="{{ $description }}"
                                                     data-media-type="{{ $media_type }}"
-                                                    @if($media_type === 'images' && isset($images))
-                                                        data-images="{{ json_encode($images) }}"
-                                                    @endif>
+                                                    @if ($media_type === 'images' && isset($images)) data-images="{{ json_encode($images) }}" @endif>
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                                 <button
@@ -627,7 +637,8 @@
                             const shown = names.slice(0, maxShow);
                             const extra = names.length - shown.length;
                             const list = shown.join(', ');
-                            $info.html(extra > 0 ? `Sélection : ${list} et +${extra} autre(s)` : `Sélection : ${list}`);
+                            $info.html(extra > 0 ? `Sélection : ${list} et +${extra} autre(s)` :
+                                `Sélection : ${list}`);
                         } else {
                             $info.empty();
                         }
@@ -803,8 +814,7 @@
                 } else if (mediaType === 'images') {
                     // Récupérer les images depuis les data attributes
                     let images = $(this).data('images');
-                    console.log(images);
-                    
+
                     // Parser le JSON si c'est une chaîne
                     if (typeof images === 'string') {
                         try {
@@ -817,57 +827,50 @@
 
                     if (images && Array.isArray(images) && images.length > 0) {
                         // Créer le carousel d'images
-                        let carouselHtml = '<div id="imageCarousel" class="carousel slide" data-ride="carousel"><div class="carousel-inner">';
+                        let carouselHtml =
+                            '<div id="imageCarousel" class="carousel slide" data-ride="carousel">';
+                        carouselHtml += '<div class="carousel-inner">';
+
                         images.forEach((image, index) => {
                             const activeClass = index === 0 ? 'active' : '';
-                            // Construire une URL sûre: préfixer /storage si chemin relatif et encoder les caractères
-                            let raw = String(image || '');
-                            // Retirer éventuels antislashs d'échappement
-                            raw = raw.replace(/\\/g, '/');
-                            let url = raw;
-                            const isAbsolute = /^https?:\/\//i.test(raw);
-                            const hasStorage = /^\/?storage\//i.test(raw) || raw.startsWith('/storage/');
-                            if (!isAbsolute) {
-                                if (!hasStorage) {
-                                    url = '/storage/' + raw.replace(/^\/+/, '');
-                                } else {
-                                    url = raw.startsWith('/') ? raw : '/' + raw;
-                                }
-                            }
-                            // Encoder l'URL tout en conservant les slashs
-                            url = encodeURI(url);
-
+                            const imageName = image.split('/').pop(); // Extraire le nom du fichier
                             carouselHtml += `<div class="carousel-item ${activeClass}">
-                                <img src="${url}" class="d-block w-100" style="max-height: 400px; object-fit: contain;">
-                            </div>`;
+                <img src="/storage/${image}" class="d-block w-100" style="max-height: 400px; object-fit: contain;" alt="Image ${index + 1}">
+                <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50">
+                    <p class="mb-0">${imageName}</p>
+                </div>
+            </div>`;
                         });
+
                         carouselHtml += '</div>';
-                        
+
                         // Ajouter les contrôles si plus d'une image
                         if (images.length > 1) {
                             carouselHtml += `
-                                <a class="carousel-control-prev" href="#imageCarousel" role="button" data-slide="prev">
-                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                                </a>
-                                <a class="carousel-control-next" href="#imageCarousel" role="button" data-slide="next">
-                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                                </a>
-                                <ol class="carousel-indicators">`;
-                            images.forEach((_, index) => {
-                                const activeClass = index === 0 ? 'active' : '';
-                                carouselHtml += `<li data-target="#imageCarousel" data-slide-to="${index}" class="${activeClass}"></li>`;
-                            });
-                            carouselHtml += '</ol>';
+                <a class="carousel-control-prev" href="#imageCarousel" role="button" data-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Précédent</span>
+                </a>
+                <a class="carousel-control-next" href="#imageCarousel" role="button" data-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Suivant</span>
+                </a>`;
                         }
+
                         carouselHtml += '</div>';
-                        
+
+                        // Ajouter un indicateur du nombre d'images
+                        carouselHtml +=
+                            `<div class="mt-2 text-center small text-muted">${images.length} image(s)</div>`;
+
                         $('#imageCarouselContainer').html(carouselHtml).removeClass('d-none');
                         $('#mediaTypeBadge').text('Images').removeClass('d-none');
                     } else {
-                        console.log('No images found');
+                        $('#imageCarouselContainer').html(
+                            '<div class="text-center py-4"><i class="fas fa-exclamation-triangle text-warning fa-2x mb-2"></i><p>Aucune image disponible</p></div>'
+                            ).removeClass('d-none');
                     }
                 }
-
                 $('#temoignageTitle').text(temoignageName);
                 $('#temoignageDescription').text(temoignageDescription);
                 $('#temoignageViewModal').modal('show');
