@@ -476,7 +476,7 @@
                                                             @csrf
                                                             <button type="submit" class="btn btn-sm btn-outline-warning mx-1 rounded" 
                                                                     title="Dépublier cette émission">
-                                                                <i class="fas fa-power-off"></i>
+                                                                <i class="fas fa-power-off"></i> Dépublier
                                                             </button>
                                                         </form>
                                                     @else
@@ -484,7 +484,7 @@
                                                             @csrf
                                                             <button type="submit" class="btn btn-sm btn-outline-success mx-1 rounded" 
                                                                     title="Publier cette émission">
-                                                                <i class="fas fa-power-off"></i>
+                                                                <i class="fas fa-power-off"></i> Publier
                                                             </button>
                                                         </form>
                                                     @endif

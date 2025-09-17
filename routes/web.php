@@ -8,10 +8,10 @@ use App\Http\Controllers\InfoBulleController;
 use App\Http\Controllers\LienUtileController;
 use App\Http\Controllers\ParametreController;
 use App\Http\Controllers\TemoignageController;
-use App\Http\Controllers\PlaylistItemController;
 use App\Http\Controllers\Auth\AuthViewController;
 use App\Http\Controllers\InfoImportanteController;
 use App\Http\Controllers\EmissionController;
+use App\Http\Controllers\EtablissementController;
 
 /*
 |--------------------------------------------------------------------------
@@ -59,6 +59,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/{id}/toggle-status', [InfoBulleController::class, 'toggleStatus'])->name('info-bulles.toggle-status');
     Route::resource('info_importantes', InfoImportanteController::class);
     Route::post('info_importantes/{id}/toggle_status', [InfoImportanteController::class, 'toggleStatus'])->name('info_importantes.toggle_status');
+
+    // Etablissements (Siège / Annexe)
+    Route::resource('etablissements', EtablissementController::class);
+    Route::post('etablissements/{id}/toggle_status', [EtablissementController::class, 'toggleStatus'])->name('etablissements.toggle_status');
 });
 
 require __DIR__ . '/auth.php';

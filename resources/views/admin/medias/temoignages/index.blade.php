@@ -496,7 +496,7 @@
                                                             <button type="submit"
                                                                 class="btn btn-sm btn-outline-warning rounded mx-1"
                                                                 title="Dépublier la vidéo">
-                                                                <i class="fas fa-power-off"></i>
+                                                                <i class="fas fa-power-off"></i> Dépublier
                                                             </button>
                                                         </form>
                                                     @else
@@ -506,7 +506,7 @@
                                                             <button type="submit"
                                                                 class="btn btn-sm btn-outline-success rounded mx-1"
                                                                 title="Publier la vidéo">
-                                                                <i class="fas fa-power-off"></i>
+                                                                <i class="fas fa-power-off"></i> Publier
                                                             </button>
                                                         </form>
                                                     @endif

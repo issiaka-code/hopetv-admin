@@ -79,6 +79,12 @@
                 </a>
             </li>
 
+            <li class="{{ Route::is('etablissements.*') ? 'active' : '' }}">
+                <a href="{{ route('etablissements.index') }}" class="nav-link">
+                    <i data-feather="home"></i><span>Établissements</span>
+                </a>
+            </li>
+
             <li class="{{ Route::is('liens-utiles.*') ? 'active' : '' }}">
                 <a href="{{ route('liens-utiles.index') }}" class="nav-link">
                     <i data-feather="link"></i><span>Liens utiles</span>

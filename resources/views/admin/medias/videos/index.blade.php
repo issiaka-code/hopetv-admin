@@ -423,14 +423,14 @@
                                                     <form action="{{ route('videos.unpublish', $video->id) }}" method="POST" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="btn btn-sm btn-outline-warning rounded mx-1" title="Dépublier la vidéo">
-                                                            <i class="fas fa-power-off"></i> {{-- Icône arrêt/power --}}
+                                                            <i class="fas fa-power-off"></i> Dépublier
                                                         </button>
                                                     </form>
                                                 @else
                                                     <form action="{{ route('videos.publish', $video->id) }}" method="POST" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="btn btn-sm btn-outline-success rounded mx-1" title="Publier la vidéo">
-                                                            <i class="fas fa-power-off"></i> {{-- Icône validation --}}
+                                                            <i class="fas fa-power-off"></i> Publier
                                                         </button>
                                                     </form>
                                                 @endif
