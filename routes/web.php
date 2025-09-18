@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\PodcastController;
 use App\Http\Controllers\PlaylistController;
@@ -31,9 +32,9 @@ Route::get('/', function () {
 Route::get('login', [AuthViewController::class, 'createLogin'])
     ->name('view.login');
 
-Route::get('/dashboard', function () {
-    return view('admin.index');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 // Routes des ressources (CRUD)
 Route::middleware('auth')->group(function () {
