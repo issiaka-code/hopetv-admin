@@ -82,11 +82,15 @@ class TemoignageController extends Controller
                     $thumbnailUrl = null; // Pas d'image, on utilisera l'icône par défaut
                 }
             } elseif ($isImages) {
-                // Pour les images, utiliser la couverture si dispo, sinon la première image
+                // Pour les images, utiliser la couverture si dispo, sinon la première image de url_fichier (JSON)
                 if ($temoignage->media->thumbnail) {
                     $thumbnailUrl = asset('storage/' . $temoignage->media->thumbnail);
                 } else {
-                    $imagesArr = is_array($temoignage->media->images ?? null) ? $temoignage->media->images : [];
+                    $imagesArr = [];
+                    if (!empty($temoignage->media->url_fichier)) {
+                        $decoded = json_decode($temoignage->media->url_fichier, true);
+                        $imagesArr = is_array($decoded) ? $decoded : [];
+                    }
                     $first = count($imagesArr) > 0 ? $imagesArr[0] : null;
                     $thumbnailUrl = $first ? asset('storage/' . $first) : null;
                 }
@@ -99,10 +103,10 @@ class TemoignageController extends Controller
                 'media_type' => $isAudio ? 'audio' : ($isVideoLink ? 'video_link' : ($isVideoFile ? 'video_file' : ($isPdf ? 'pdf' : ($isImages ? 'images' : null)))),
                 'thumbnail_url' => $thumbnailUrl,
                 'video_url' => $isVideoFile ? asset('storage/' . $temoignage->media->url_fichier) : $thumbnailUrl,
-                'media_url' => $temoignage->media ? asset('storage/' . $temoignage->media->url_fichier) : null,
-                'has_thumbnail' => $temoignage->media && $temoignage->media->thumbnail ? true : ($isImages && !empty($temoignage->media->images)),
+                'media_url' => $temoignage->media && !$isImages ? asset('storage/' . $temoignage->media->url_fichier) : null,
+                'has_thumbnail' => $temoignage->media && $temoignage->media->thumbnail ? true : ($isImages && !empty(json_decode($temoignage->media->url_fichier ?? '[]', true))),
                 'is_published' => $temoignage->media->is_published ?? true,
-                'images' => $isImages ? array_map(function ($p) { return asset('storage/' . $p); }, (array)($temoignage->media->images ?? [])) : [],
+                'images' => $isImages ? array_map(function ($p) { return asset('storage/' . $p); }, (array)(json_decode($temoignage->media->url_fichier ?? '[]', true) ?: [])) : [],
             ];
         });
         // Envoyer chaque témoignage comme variable séparée
@@ -114,6 +118,10 @@ class TemoignageController extends Controller
 
     public function store(Request $request)
     {
+        Log::info('TemoignageController@store: début', [
+            'media_type' => $request->input('media_type'),
+            'nom' => $request->input('nom'),
+        ]);
         $request->validate([
             'nom' => 'required|string|max:255',
             'description' => 'required|string',
@@ -176,6 +184,7 @@ class TemoignageController extends Controller
                 // Stockage direct du PDF
                 $filePath = $file->storeAs('pdfs', $uniqueName, 'public');
             } elseif ($request->media_type === 'images') {
+                Log::info('TemoignageController@store: type images détecté');
                 $request->validate([
                     'images' => 'required|array|min:1',
                     'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
@@ -185,13 +194,22 @@ class TemoignageController extends Controller
                 // Stocker images multiples
                 $storedImages = [];
                 if ($request->hasFile('images')) {
+                    Log::info('TemoignageController@store: nombre de fichiers images', [
+                        'count' => is_countable($request->file('images')) ? count($request->file('images')) : null
+                    ]);
                     foreach ($request->file('images') as $imgFile) {
                         if ($imgFile && $imgFile->isValid()) {
+                            Log::info('TemoignageController@store: fichier image valide', [
+                                'original_name' => $imgFile->getClientOriginalName(),
+                                'size' => $imgFile->getSize(),
+                                'mime' => $imgFile->getMimeType(),
+                            ]);
                             $base = pathinfo($imgFile->getClientOriginalName(), PATHINFO_FILENAME);
                             $ext = $imgFile->getClientOriginalExtension();
                             $unique = Str::slug($base, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $ext;
                             $path = $imgFile->storeAs('images/temoignages', $unique, 'public');
                             $storedImages[] = $path;
+                            Log::info('TemoignageController@store: image stockée', ['path' => $path]);
                         }
                     }
                 }
@@ -201,8 +219,8 @@ class TemoignageController extends Controller
                     throw new \Exception('Aucune image valide n\'a été trouvée dans la requête');
                 }
 
-                // Fichier principal non utilisé pour images, mais on met null
-                $filePath = null;
+                // Pour images, url_fichier contiendra le JSON des chemins
+                $filePath = json_encode($storedImages);
 
                 // Couverture
                 $thumbnailPath = null;
@@ -212,6 +230,7 @@ class TemoignageController extends Controller
                         $thumbName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
                         $thumbUniqueName = 'thumb_' . Str::slug($thumbName, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $thumbnailFile->getClientOriginalExtension();
                         $thumbnailPath = $thumbnailFile->storeAs('thumbnails/images', $thumbUniqueName, 'public');
+                        Log::info('TemoignageController@store: image de couverture stockée', ['thumbnail' => $thumbnailPath]);
                     }
                 }
             }
@@ -257,25 +276,33 @@ class TemoignageController extends Controller
             ];
 
             // Ajouter les images pour le type image
-            if ($type === 'images') {
-                $mediaData['images'] = $storedImages ?? [];
-            }
+            // Si images, on n'utilise plus la colonne images, tout est dans url_fichier JSON
 
+            Log::info('TemoignageController@store: création du média', [
+                'type' => $type,
+                'has_thumbnail' => (bool) $thumbnailPath,
+                'images_count' => $type === 'images' ? (is_countable($storedImages ?? null) ? count($storedImages) : null) : null,
+            ]);
             $media = Media::create($mediaData);
+            Log::info('TemoignageController@store: média créé', ['media_id' => $media->id]);
 
             // Créer le témoignage
-            Temoignage::create([
+            $temoignage = Temoignage::create([
                 'id_media' => $media->id,
                 'nom' => $request->nom,
                 'description' => $request->description,
                 'insert_by' => auth()->id(),
                 'update_by' => auth()->id(),
             ]);
+            Log::info('TemoignageController@store: témoignage créé', ['temoignage_id' => $temoignage->id]);
 
             notify()->success('Succès', 'Témoignage ajouté avec succès.');
             return redirect()->route('temoignages.index');
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la création: ' . $e->getMessage());
+            Log::error('TemoignageController@store: erreur', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             Alert::error('Erreur', 'Impossible de créer le témoignage: ' . $e->getMessage());
             return back()->withInput();
         }
@@ -294,6 +321,10 @@ class TemoignageController extends Controller
 
     public function update(Request $request, $id)
     {
+        Log::info('TemoignageController@update: début', [
+            'id' => $id,
+            'media_type' => $request->input('media_type'),
+        ]);
         $request->validate([
             'nom' => 'required|string|max:255',
             'description' => 'required|string',
@@ -433,6 +464,7 @@ class TemoignageController extends Controller
                     $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
                 }
             } elseif ($request->media_type === 'images') {
+                Log::info('TemoignageController@update: type images détecté');
                 $request->validate([
                     'images' => 'nullable',
                     'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
@@ -442,37 +474,52 @@ class TemoignageController extends Controller
                 $type = 'images';
 
                 // Conserver les images existantes
-                $existingImages = (array)($media->images ?? []);
+                $existingImages = [];
+                if (!empty($media->url_fichier)) {
+                    $decoded = json_decode($media->url_fichier, true);
+                    $existingImages = is_array($decoded) ? $decoded : [];
+                }
                 $newImages = [];
 
                 if ($request->hasFile('images')) {
+                    Log::info('TemoignageController@update: nombre de nouveaux fichiers images', [
+                        'count' => is_countable($request->file('images')) ? count($request->file('images')) : null
+                    ]);
                     foreach ($request->file('images') as $imgFile) {
                         if ($imgFile && $imgFile->isValid()) {
+                            Log::info('TemoignageController@update: nouveau fichier image valide', [
+                                'original_name' => $imgFile->getClientOriginalName(),
+                                'size' => $imgFile->getSize(),
+                                'mime' => $imgFile->getMimeType(),
+                            ]);
                             $base = pathinfo($imgFile->getClientOriginalName(), PATHINFO_FILENAME);
                             $ext = $imgFile->getClientOriginalExtension();
                             $unique = Str::slug($base, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $ext;
                             $path = $imgFile->storeAs('images/temoignages', $unique, 'public');
                             $newImages[] = $path;
+                            Log::info('TemoignageController@update: image stockée', ['path' => $path]);
                         }
                     }
                 }
 
                 // Gestion de la couverture
                 if ($request->hasFile('image_couverture_images')) {
+                    Log::info('TemoignageController@update: mise à jour image de couverture');
                     if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
                         Storage::disk('public')->delete($media->thumbnail);
+                        Log::info('TemoignageController@update: ancienne couverture supprimée', ['thumbnail' => $media->thumbnail]);
                     }
                     $thumbnailFile = $request->file('image_couverture_images');
                     if ($thumbnailFile->isValid()) {
                         $thumbName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
                         $thumbUniqueName = 'thumb_' . Str::slug($thumbName, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $thumbnailFile->getClientOriginalExtension();
                         $thumbnailPath = $thumbnailFile->storeAs('thumbnails/images', $thumbUniqueName, 'public');
+                        Log::info('TemoignageController@update: nouvelle couverture stockée', ['thumbnail' => $thumbnailPath]);
                     }
                 }
 
-                // Aucun fichier principal pour images
-                $filePath = null;
-                $updateData['images'] = array_values(array_merge($existingImages, $newImages));
+                // url_fichier stocke le JSON des chemins
+                $filePath = json_encode(array_values(array_merge($existingImages, $newImages)));
             }
 
             // Mise à jour du média
@@ -487,6 +534,12 @@ class TemoignageController extends Controller
             
 
             $media->update($updateData);
+            Log::info('TemoignageController@update: média mis à jour', [
+                'media_id' => $media->id,
+                'type' => $media->type,
+                'has_thumbnail' => (bool) $media->thumbnail,
+                'images_count' => is_countable($media->images ?? null) ? count($media->images) : null,
+            ]);
 
             // Mise à jour du témoignage
             $temoignage->update([
@@ -494,13 +547,17 @@ class TemoignageController extends Controller
                 'description' => $request->description,
                 'update_by' => auth()->id(),
             ]);
+            Log::info('TemoignageController@update: témoignage mis à jour', ['temoignage_id' => $temoignage->id]);
 
             DB::commit();
             notify()->success('Succès', 'Témoignage mis à jour avec succès.');
             return redirect()->route('temoignages.index');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Erreur lors de la mise à jour: ' . $e->getMessage());
+            Log::error('TemoignageController@update: erreur', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             Alert::error('Erreur', 'Impossible de mettre à jour le témoignage: ' . $e->getMessage());
             return back()->withInput();
         }

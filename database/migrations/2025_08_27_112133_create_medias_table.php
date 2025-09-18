@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('medias', function (Blueprint $table) {
             $table->id();
-            $table->string('url_fichier');
+            $table->text('url_fichier');
             $table->enum('type', ['video', 'audio', 'pdf', 'link']);
             $table->foreignId('insert_by')->constrained('users');
             $table->foreignId('update_by')->constrained('users');

@@ -75,7 +75,6 @@
                 
                 <!-- Infos témoignage -->
                 <div class="mt-2 text-justify">
-                    <h4 id="temoignageTitle" class="font-weight-bold text-center "></h4>
                     <div class="card">
                         <div class="card-header bg-light">
                             <h6 class="mb-0">Description</h6>
