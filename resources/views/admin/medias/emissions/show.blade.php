@@ -130,7 +130,7 @@
                         </div>
                         <div class="card-body">
                             <h5 class="card-title font-weight-bold">{{ $item->titre_video }}</h5>
-                            <p class="card-text text-muted">{{ Str::limit($item->description_video, 100) }}</p>
+                            <p class="card-text text-muted">{{ Str::limit($item->description_video, 30) }}</p>
                             <div class="d-flex justify-content-between align-items-center my">
                                 <button class="btn btn-info btn-sm view-video-btn rounded"
                                     data-video-url="{{ $item->type_video === 'video' ? asset('storage/emissions/videos/' . $item->video_url) : $item->video_url }}"
