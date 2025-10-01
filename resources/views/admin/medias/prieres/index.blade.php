@@ -1,6 +1,6 @@
 @extends('admin.master')
 
-@section('title', 'Gestion des Témoignages')
+@section('title', 'Gestion des Prières')
 
 @push('styles')
     <style>
@@ -27,7 +27,7 @@
             margin-bottom: 0;
         }
 
-        .temoignage-card {
+        .priere-card {
             border-radius: 10px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             border: none;
@@ -36,12 +36,12 @@
             height: 100%;
         }
 
-        .temoignage-card:hover {
+        .priere-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
 
-        .temoignage-thumbnail-container {
+        .priere-thumbnail-container {
             overflow: hidden;
             height: 180px;
             position: relative;
@@ -51,15 +51,15 @@
             justify-content: center;
         }
 
-        .temoignage-thumbnail {
+        .priere-thumbnail {
             cursor: pointer;
             height: 100%;
             width: 100%;
         }
 
-        .temoignage-thumbnail video,
-        .temoignage-thumbnail img,
-        .temoignage-thumbnail iframe {
+        .priere-thumbnail video,
+        .priere-thumbnail img,
+        .priere-thumbnail iframe {
             object-fit: cover;
             height: 100%;
             width: 100%;
@@ -80,8 +80,8 @@
             color: #e74a3b;
         }
 
-        .temoignage-card:hover .temoignage-thumbnail video,
-        .temoignage-card:hover .temoignage-thumbnail img {
+        .priere-card:hover .priere-thumbnail video,
+        .priere-card:hover .priere-thumbnail img {
             transform: scale(1.05);
         }
 
@@ -105,11 +105,11 @@
             color: white;
         }
 
-        .temoignage-thumbnail:hover .thumbnail-overlay {
+        .priere-thumbnail:hover .thumbnail-overlay {
             opacity: 1;
         }
 
-        .temoignage-card .card-title {
+        .priere-card .card-title {
             font-size: 1.1rem;
             margin-bottom: 0.5rem;
             white-space: nowrap;
@@ -117,7 +117,7 @@
             text-overflow: ellipsis;
         }
 
-        .temoignage-card .card-text {
+        .priere-card .card-text {
             height: 40px;
             overflow: hidden;
             margin-bottom: 1rem;
@@ -134,13 +134,13 @@
         }
 
         /* Styles pour la grille responsive */
-        #temoignages-grid {
+        #prieres-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.5rem;
         }
 
-        .temoignage-grid-item {
+        .priere-grid-item {
             width: 100%;
         }
 
@@ -159,29 +159,29 @@
 
         /* Responsive improvements */
         @media (max-width: 1400px) {
-            #temoignages-grid {
+            #prieres-grid {
                 grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             }
         }
 
         @media (max-width: 1200px) {
-            #temoignages-grid {
+            #prieres-grid {
                 grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
                 gap: 1.25rem;
             }
 
-            .temoignage-thumbnail-container {
+            .priere-thumbnail-container {
                 height: 160px;
             }
         }
 
         @media (max-width: 992px) {
-            #temoignages-grid {
+            #prieres-grid {
                 grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
                 gap: 1rem;
             }
 
-            .temoignage-thumbnail-container {
+            .priere-thumbnail-container {
                 height: 140px;
             }
 
@@ -195,12 +195,12 @@
         }
 
         @media (max-width: 768px) {
-            #temoignages-grid {
+            #prieres-grid {
                 grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
                 gap: 0.875rem;
             }
 
-            .temoignage-thumbnail-container {
+            .priere-thumbnail-container {
                 height: 120px;
             }
 
@@ -215,14 +215,14 @@
         }
 
         @media (max-width: 576px) {
-            #temoignages-grid {
+            #prieres-grid {
                 grid-template-columns: 1fr;
                 gap: 1rem;
                 max-width: 400px;
                 margin: 0 auto;
             }
 
-            .temoignage-thumbnail-container {
+            .priere-thumbnail-container {
                 height: 180px;
             }
 
@@ -254,7 +254,7 @@
         }
 
         @media (max-width: 400px) {
-            .temoignage-thumbnail-container {
+            .priere-thumbnail-container {
                 height: 150px;
             }
 
@@ -276,7 +276,7 @@
 
         /* Touch device improvements */
         @media (hover: none) {
-            .temoignage-card:hover {
+            .priere-card:hover {
                 transform: none;
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             }
@@ -320,22 +320,22 @@
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="d-flex justify-content-between align-items-center section-header">
-                        <h2 class="section-title">Témoignages disponibles</h2>
+                        <h2 class="section-title">Prières disponibles</h2>
                         <button type="button" class="btn btn-primary" data-toggle="modal"
-                            data-target="#addTemoignageModal">
-                            <i class="fas fa-plus"></i> Ajouter un témoignage
+                            data-target="#addPriereModal">
+                            <i class="fas fa-plus"></i> Ajouter une prière
                         </button>
                     </div>
                 </div>
             </div>
 
             <div class="row mb-4">
-                <form method="GET" action="{{ route('temoignages.index') }}" class="w-100">
+                <form method="GET" action="{{ route('prieres.index') }}" class="w-100">
                     <div class="row g-2 d-flex flex-row justify-content-end align-items-center">
                         <!-- Champ recherche -->
                         <div class="col-3">
                             <input type="text" name="search" value="{{ request('search') }}" class="form-control"
-                                placeholder="Rechercher un témoignage...">
+                                placeholder="Rechercher une prière...">
                         </div>
 
                         <!-- Filtre par type -->
@@ -359,7 +359,7 @@
                             </button>
                         </div>
                         <div class="col-md-2 my-1">
-                            <a href="{{ route('temoignages.index') }}" class="btn btn-outline-secondary w-100">
+                            <a href="{{ route('prieres.index') }}" class="btn btn-outline-secondary w-100">
                                 <i class="fas fa-sync py-2"></i> Réinitialiser
                             </a>
                         </div>
@@ -367,36 +367,36 @@
                 </form>
             </div>
 
-            <!-- Grille de témoignages -->
+            <!-- Grille de prières -->
             <div class="row">
                 <div class="col-12">
-                    <div id="temoignages-grid">
-                        @forelse($temoignagesData as $temoignageData)
+                    <div id="prieres-grid">
+                        @forelse($prieresData as $priereData)
                             @php
-                                $id = $temoignageData->id;
-                                $nom = $temoignageData->nom;
-                                $description = $temoignageData->description;
-                                $created_at = $temoignageData->created_at;
-                                $media_type = $temoignageData->media_type;
-                                $thumbnail_url = $temoignageData->thumbnail_url;
-                                $media_url = $temoignageData->media_url;
-                                $is_published = $temoignageData->is_published ?? false;
+                                $id = $priereData->id;
+                                $nom = $priereData->nom;
+                                $description = $priereData->description;
+                                $created_at = $priereData->created_at;
+                                $media_type = $priereData->media_type;
+                                $thumbnail_url = $priereData->thumbnail_url;
+                                $media_url = $priereData->media_url;
+                                $is_published = $priereData->is_published ?? false;
                                 
                             @endphp
 
-                            <div class="temoignage-grid-item">
-                                <div class="card temoignage-card">
-                                    <div class="temoignage-thumbnail-container">
-                                            <div class="temoignage-thumbnail position-relative"
-                                            data-temoignage-url="{{ $thumbnail_url }}"
-                                            data-video-url="{{ $temoignageData->video_url ?? '' }}"
-                                            data-temoignage-name="{{ $nom }}"
+                            <div class="priere-grid-item">
+                                <div class="card priere-card">
+                                    <div class="priere-thumbnail-container">
+                                            <div class="priere-thumbnail position-relative"
+                                            data-priere-url="{{ $thumbnail_url }}"
+                                            data-video-url="{{ $priereData->video_url ?? '' }}"
+                                            data-priere-name="{{ $nom }}"
                                                 data-media-url="{{ $media_url }}" data-media-type="{{ $media_type }}"
-                                            data-has-thumbnail="{{ $temoignageData->has_thumbnail ? 'true' : 'false' }}"
-                                            data-images='@json($temoignageData->images ?? [])'>
+                                            data-has-thumbnail="{{ $priereData->has_thumbnail ? 'true' : 'false' }}"
+                                            data-images='@json($priereData->images ?? [])'>
 
                                             <!-- Afficher l'image de couverture ou icône par défaut -->
-                                            @if ($temoignageData->has_thumbnail)
+                                            @if ($priereData->has_thumbnail)
                                                 <img src="{{ $thumbnail_url }}" alt="{{ $nom }}"
                                                     style="width: 100%; height: 100%; object-fit: cover;">
                                             @else
@@ -455,30 +455,30 @@
                                             <small class="text-muted mb-1">{{ $created_at->format('d/m/Y') }}</small>
 
                                             <div class="btn-group">
-                                                <button class="btn btn-sm btn-outline-info view-temoignage-btn rounded"
-                                                    title="Voir le témoignage" data-temoignage-url="{{ $thumbnail_url }}"
+                                                <button class="btn btn-sm btn-outline-info view-priere-btn rounded"
+                                                    title="Voir la prière" data-priere-url="{{ $thumbnail_url }}"
                                                     data-media-url="{{ $media_url }}"
-                                                    data-temoignage-name="{{ $nom }}"
+                                                    data-priere-name="{{ $nom }}"
                                                     data-title="{{ $nom }}"
                                                     data-description="{{ $description }}"
                                                     data-media-type="{{ $media_type }}"
-                                                    data-images='@json($temoignageData->images ?? [])'>
+                                                    data-images='@json($priereData->images ?? [])'>
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                                 <button
-                                                    class="btn btn-sm btn-outline-primary edit-temoignage-btn mx-1 rounded"
-                                                    title="Modifier le témoignage"
-                                                    data-temoignage-id="{{ $id }}">
+                                                    class="btn btn-sm btn-outline-primary edit-priere-btn mx-1 rounded"
+                                                    title="Modifier la prière"
+                                                    data-priere-id="{{ $id }}">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
 
-                                                <form action="{{ route('temoignages.destroy', $id) }}" method="POST"
+                                                <form action="{{ route('prieres.destroy', $id) }}" method="POST"
                                                     class="d-inline delete-form">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-outline-danger rounded"
-                                                        title="Supprimer le témoignage"
-                                                        onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce témoignage ?')">
+                                                        title="Supprimer la prière"
+                                                        onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette prière ?')">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </form>
@@ -488,7 +488,7 @@
                                                     <button
                                                         class="btn btn-sm btn-outline-{{ $is_published ? 'success' : 'secondary' }} toggle-publish-btn mx-1 rounded"
                                                         title="{{ $is_published ? 'Dépublier' : 'Publier' }} la vidéo"
-                                                        data-temoignage-id="{{ $id }}"
+                                                        data-priere-id="{{ $id }}"
                                                         data-status="{{ $is_published ? 1 : 0 }}">
                                                         <i class="fas fa-{{ $is_published ? 'toggle-on' : 'toggle-off' }}"></i>
                                                         <span class="p-1">{{ $is_published ? 'Publié' : 'Non publié' }}</span>
@@ -504,7 +504,7 @@
                     <div class="col-12 text-center py-5">
                         <div class="empty-state">
                             <i class="fas fa-comments fa-4x text-muted mb-3"></i>
-                            <h4 class="text-muted">Aucun témoignage disponible</h4>
+                            <h4 class="text-muted">Aucune prière disponible</h4>
                         </div>
                     </div>
                     @endforelse
@@ -512,18 +512,18 @@
             </div>
 
             <!-- Pagination si nécessaire -->
-            @if ($temoignages->hasPages())
+            @if ($prieres->hasPages())
                 <div class="d-flex justify-content-center mt-4">
-                    {{ $temoignages->appends(request()->query())->links() }}
+                    {{ $prieres->appends(request()->query())->links() }}
                 </div>
             @endif
         </div>
     </section>
 
     <!-- Modals -->
-    @include('admin.medias.temoignages.modals.add')
-    @include('admin.medias.temoignages.modals.edit')
-    @include('admin.medias.temoignages.modals.view')
+    @include('admin.medias.prieres.modals.add')
+    @include('admin.medias.prieres.modals.edit')
+    @include('admin.medias.prieres.modals.view')
 @endsection
 
 @push('scripts')
@@ -532,11 +532,11 @@
             // ===== TOGGLE PUBLICATION (comme établissements) =====
             $(document).on('click', '.toggle-publish-btn', function() {
                 const $btn = $(this);
-                const id = $btn.data('temoignage-id');
+                const id = $btn.data('priere-id');
                 const isPublished = Number($btn.data('status')) === 1;
                 const url = isPublished
-                    ? "{{ url('temoignages') }}/" + id + "/unpublish"
-                    : "{{ url('temoignages') }}/" + id + "/publish";
+                    ? "{{ url('prieres') }}/" + id + "/unpublish"
+                    : "{{ url('prieres') }}/" + id + "/publish";
 
                 $.post(url, { _token: '{{ csrf_token() }}' })
                     .done(function() {
@@ -550,7 +550,7 @@
             // Accumulate multiple selections for images[]
             let addImageFilesDT = null;
             // ===== GESTION DU FORMULAIRE D'AJOUT =====
-            $('input[name="media_type"]', '#addTemoignageForm').change(function() {
+            $('input[name="media_type"]', '#addPriereForm').change(function() {
                 const selectedType = $(this).val();
                 $('#addAudioFileSection, #addVideoFileSection, #addVideoLinkSection, #addPdfFileSection, #addImageFileSection')
                     .addClass('d-none');
@@ -656,8 +656,8 @@
                     }
                 });
 
-            $('#addTemoignageModal').on('hidden.bs.modal', function() {
-                $('#addTemoignageForm')[0].reset();
+            $('#addPriereModal').on('hidden.bs.modal', function() {
+                $('#addPriereForm')[0].reset();
                 $('#addAudioFile, #addVideoFile, #addPdfFile')
                     .next('.custom-file-label').html('Choisir un fichier');
                 $('#addAudioImageFile, #addVideoImageFile, #addPdfImageFile')
@@ -675,7 +675,7 @@
             });
 
             // ===== GESTION DU FORMULAIRE D'ÉDITION =====
-            $('input[name="media_type"]', '#editTemoignageForm').change(function() {
+            $('input[name="media_type"]', '#editPriereForm').change(function() {
                 const selectedType = $(this).val();
                 $('#editAudioFileSection, #editVideoFileSection, #editVideoLinkSection, #editPdfFileSection, #editImageFileSection')
                     .addClass('d-none');
@@ -703,17 +703,17 @@
                         'Choisir un nouveau fichier');
                 });
 
-            $(document).on('click', '.edit-temoignage-btn', function() {
-                const temoignageId = $(this).data('temoignage-id');
+            $(document).on('click', '.edit-priere-btn', function() {
+                const priereId = $(this).data('priere-id');
                 $.ajax({
-                    url: "{{ route('temoignages.edit', ':id') }}".replace(':id', temoignageId),
+                    url: "{{ route('prieres.edit', ':id') }}".replace(':id', priereId),
                     method: 'GET',
                     success: function(data) {
-                        $('#editTemoignageNom').val(data.nom);
-                        $('#editTemoignageDescription').val(data.description);
-                        $('#editTemoignageForm').attr('action',
-                            "{{ route('temoignages.update', ':id') }}".replace(':id',
-                                temoignageId));
+                        $('#editPriereNom').val(data.nom);
+                        $('#editPriereDescription').val(data.description);
+                        $('#editPriereForm').attr('action',
+                            "{{ route('prieres.update', ':id') }}".replace(':id',
+                                priereId));
 
                         if (data.media) {
                             let mediaType = data.media.type;
@@ -784,20 +784,20 @@
                                 });
                             }
                         }
-                        $('#editTemoignageModal').modal('show');
+                        $('#editPriereModal').modal('show');
                     },
                     error: function() {
-                        alert('Erreur lors du chargement des données du témoignage');
+                        alert('Erreur lors du chargement des données de la prière');
                     }
                 });
             });
 
-            // ===== VISUALISATION DES TÉMOIGNAGES =====
-            $(document).on('click', '.view-temoignage-btn, .temoignage-thumbnail', function() {
-                const temoignageUrl = $(this).data('temoignage-url');
-                const temoignageName = $(this).data('temoignage-name');
+            // ===== VISUALISATION DES PRIÈRES =====
+            $(document).on('click', '.view-priere-btn, .priere-thumbnail', function() {
+                const priereUrl = $(this).data('priere-url');
+                const priereName = $(this).data('priere-name');
                 const mediaType = $(this).data('media-type');
-                const temoignageDescription = $(this).closest('.temoignage-card').find('.card-text').attr(
+                const priereDescription = $(this).closest('.priere-card').find('.card-text').attr(
                     'title') || '';
                 // Masquer tous les lecteurs et réinitialiser
                 $('#audioPlayerContainer, #videoPlayerContainer, #iframePlayerContainer, #pdfViewerContainer, #imageCarouselContainer')
@@ -822,7 +822,7 @@
                         console.log('No audio URL found');
                     }
                 } else if (mediaType === 'video_link') {
-                    $('#modalIframePlayer').attr('src', temoignageUrl);
+                    $('#modalIframePlayer').attr('src', priereUrl);
                     $('#iframePlayerContainer').removeClass('d-none');
                     $('#mediaTypeBadge').text('Vidéo en ligne').removeClass('d-none');
                 } else if (mediaType === 'video_file') {
@@ -858,13 +858,13 @@
                         $('#mediaTypeBadge').text('Images').removeClass('d-none');
                     }
                 }
-                $('#temoignageTitle').text(temoignageName);
-                $('#temoignageDescription').text(temoignageDescription);
-                $('#temoignageViewModal').modal('show');
+                $('#priereTitle').text(priereName);
+                $('#priereDescription').text(priereDescription);
+                $('#priereViewModal').modal('show');
             });
 
             // ===== NETTOYAGE DU MODAL =====
-            $('#temoignageViewModal').on('hidden.bs.modal', function() {
+            $('#priereViewModal').on('hidden.bs.modal', function() {
                 // Arrêter tous les médias
                 $('#modalAudioPlayer').get(0).pause();
                 $('#modalVideoPlayer').get(0).pause();
@@ -881,11 +881,11 @@
                         'd-none');
 
                 // Vider les informations
-                $('#temoignageTitle, #temoignageDescription, #mediaTypeBadge').text('');
+                $('#priereTitle, #priereDescription, #mediaTypeBadge').text('');
             });
 
             // ===== LECTURE AUTOMATIQUE =====
-            $('#temoignageViewModal').on('shown.bs.modal', function() {
+            $('#priereViewModal').on('shown.bs.modal', function() {
                 const audioPlayer = $('#modalAudioPlayer').get(0);
                 const videoPlayer = $('#modalVideoPlayer').get(0);
 

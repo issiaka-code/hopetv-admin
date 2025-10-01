@@ -1,10 +1,10 @@
-<!-- Modal pour visualiser l'émission -->
-<div class="modal fade" id="emissionViewModal" tabindex="-1" role="dialog" aria-labelledby="emissionViewModalLabel"
+<!-- Modal pour visualiser la prière -->
+<div class="modal fade" id="priereViewModal" tabindex="-1" role="dialog" aria-labelledby="priereViewModalLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-static" role="document">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title mb-2" id="emissionViewModalLabel">Émission</h5>
+                <h5 class="modal-title mb-2" id="priereViewModalLabel">Prière</h5>
                 <button type="button" class="close text-white fw-bold" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -49,20 +49,36 @@
                     </div>
                 </div>
                 
+                <!-- Carrousel Images -->
+                <div id="imageCarouselContainer" class="mb-4 d-none">
+                    <div id="imageCarousel" class="carousel slide" data-ride="carousel">
+                        <div class="carousel-inner" id="imageCarouselInner">
+                            
+                        </div>
+                        <a class="carousel-control-prev" href="#imageCarousel" role="button" data-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="sr-only">Précédent</span>
+                        </a>
+                        <a class="carousel-control-next" href="#imageCarousel" role="button" data-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="sr-only">Suivant</span>
+                        </a>
+                    </div>
+                </div>                
+                
                 <!-- Indicateur de type de média -->
                 <div class="text-center mb-3">
                     <span id="mediaTypeBadge" class="badge badge-pill badge-info"></span>
                 </div>
                 
-                <!-- Infos émission -->
+                <!-- Infos prière -->
                 <div class="mt-2 text-justify">
-                    <h4 id="emissionTitle" class="font-weight-bold text-center "></h4>
                     <div class="card">
                         <div class="card-header bg-light">
                             <h6 class="mb-0">Description</h6>
                         </div>
                         <div class="card-body">
-                            <p id="emissionDescription" class="text-muted mb-0"></p>
+                            <p id="priereDescription" class="text-muted mb-0"></p>
                         </div>
                     </div>
                 </div>

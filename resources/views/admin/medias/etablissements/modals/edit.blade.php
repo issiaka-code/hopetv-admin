@@ -45,9 +45,9 @@
           </div>
 
           <div class="form-group">
-            <label class="font-weight-bold">Localisation</label>
-            <input type="text" name="localisation" id="editLocalisation" class="form-control @error('localisation') is-invalid @enderror">
-            @error('localisation')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            <label class="font-weight-bold">Adresse</label>
+            <textarea name="adresse" id="editAdresse" class="form-control @error('adresse') is-invalid @enderror" rows="3" placeholder="Entrez l'adresse complète de l'établissement"></textarea>
+            @error('adresse')<div class="invalid-feedback">{{ $message }}</div>@enderror
           </div>
 
           <div class="form-group">

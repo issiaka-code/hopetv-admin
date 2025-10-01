@@ -41,6 +41,16 @@
                     <i data-feather="message-square"></i><span>Témoignages</span>
                 </a>
             </li>
+            <li class="{{ Route::is('prieres.*') ? 'active' : '' }}">
+                <a href="{{ route('prieres.index') }}" class="nav-link">
+                    <i data-feather="shield"></i><span>Prières</span>
+                </a>
+            </li>
+            <li class="{{ Route::is('home-charities.*') ? 'active' : '' }}">
+                <a href="{{ route('home-charities.index') }}" class="nav-link">
+                    <i data-feather="heart"></i><span>Home Charity</span>
+                </a>
+            </li>
             <li class="{{ Route::is('enseignements.*') ? 'active' : '' }}">
                 <a href="{{ route('enseignements.index') }}" class="nav-link">
                     <i data-feather="book-open"></i><span>Enseignements</span>
@@ -64,16 +74,12 @@
                     <li><a class="nav-link {{ Route::is('playlists.create') ? 'active' : '' }}"" href="{{ route('playlists.create') }}">Créer une playlist</a></li>
                 </ul>
             </li>
-            <li class="dropdown {{ Route::is('a-venir.*') ? 'active' : '' }}">
-                <a href="javascript:void(0)" class="menu-toggle nav-link has-dropdown">
-                    <i data-feather="clock"></i><span>A venir</span>
+            <li class="{{ Route::is('programmes.*') ? 'active' : '' }}">
+                <a href="{{ route('programmes.index') }}" class="nav-link">
+                    <i data-feather="calendar"></i><span>Programmes à venir</span>
                 </a>
-                <ul class="dropdown-menu">
-                    <li><a class="nav-link {{ Route::is('a-venir.index') ? 'active' : '' }}" href="{{ route('a-venir.index') }}">Toutes les programmations</a></li>
-                    <li><a class="nav-link {{ Route::is('a-venir.create') ? 'active' : '' }}" href="{{ route('a-venir.create') }}">Créer une programmation</a></li>
-                </ul>
             </li>
-            <li class="{{ Route::is('info_importantes.*') ? 'active' : '' }}">
+           <li class="{{ Route::is('info_importantes.*') ? 'active' : '' }}">
                 <a href="{{ route('info_importantes.index') }}" class="nav-link">
                     <i data-feather="star"></i><span>Directes</span>
                 </a>

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Media;
-use App\Models\Temoignage;
+use App\Models\Priere;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,11 +12,11 @@ use Illuminate\Support\Facades\Storage;
 use RealRashid\SweetAlert\Facades\Alert;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 
-class TemoignageController extends Controller
+class PriereController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Temoignage::with('media')->where('is_deleted', false)->latest();
+        $query = Priere::with('media')->where('is_deleted', false)->latest();
 
         // Recherche
         if ($request->filled('search')) {
@@ -41,21 +41,21 @@ class TemoignageController extends Controller
             });
         }
 
-        $temoignages = $query->paginate(12);
+        $prieres = $query->paginate(12);
 
         // Préparer chaque variable pour la vue et JS
-        $temoignagesData = collect($temoignages->items())->map(function ($temoignage) {
-            $isAudio = $temoignage->media && $temoignage->media->type === 'audio';
-            $isVideoLink = $temoignage->media && $temoignage->media->type === 'link';
-            $isVideoFile = $temoignage->media && $temoignage->media->type === 'video';
-            $isPdf = $temoignage->media && $temoignage->media->type === 'pdf';
-            $isImages = $temoignage->media && $temoignage->media->type === 'images';
+        $prieresData = collect($prieres->items())->map(function ($priere) {
+            $isAudio = $priere->media && $priere->media->type === 'audio';
+            $isVideoLink = $priere->media && $priere->media->type === 'link';
+            $isVideoFile = $priere->media && $priere->media->type === 'video';
+            $isPdf = $priere->media && $priere->media->type === 'pdf';
+            $isImages = $priere->media && $priere->media->type === 'images';
             
 
             $thumbnailUrl = null;
 
             if ($isVideoLink) {
-                $rawUrl = $temoignage->media->url_fichier;
+                $rawUrl = $priere->media->url_fichier;
 
                 if (Str::contains($rawUrl, 'youtube.com/watch?v=')) {
                     $videoId = explode('v=', parse_url($rawUrl, PHP_URL_QUERY))[1] ?? null;
@@ -69,26 +69,26 @@ class TemoignageController extends Controller
                 }
             } elseif ($isVideoFile) {
                 // Pour les vidéos fichiers, utiliser l'image de couverture si disponible
-                if ($temoignage->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $temoignage->media->thumbnail);
+                if ($priere->media->thumbnail) {
+                    $thumbnailUrl = asset('storage/' . $priere->media->thumbnail);
                 } else {
-                    $thumbnailUrl = asset('storage/' . $temoignage->media->url_fichier);
+                    $thumbnailUrl = asset('storage/' . $priere->media->url_fichier);
                 }
             } elseif ($isAudio || $isPdf) {
                 // Pour les audios et PDFs, utiliser l'image de couverture si disponible
-                if ($temoignage->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $temoignage->media->thumbnail);
+                if ($priere->media->thumbnail) {
+                    $thumbnailUrl = asset('storage/' . $priere->media->thumbnail);
                 } else {
                     $thumbnailUrl = null; // Pas d'image, on utilisera l'icône par défaut
                 }
             } elseif ($isImages) {
                 // Pour les images, utiliser la couverture si dispo, sinon la première image de url_fichier (JSON)
-                if ($temoignage->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $temoignage->media->thumbnail);
+                if ($priere->media->thumbnail) {
+                    $thumbnailUrl = asset('storage/' . $priere->media->thumbnail);
                 } else {
                     $imagesArr = [];
-                    if (!empty($temoignage->media->url_fichier)) {
-                        $decoded = json_decode($temoignage->media->url_fichier, true);
+                    if (!empty($priere->media->url_fichier)) {
+                        $decoded = json_decode($priere->media->url_fichier, true);
                         $imagesArr = is_array($decoded) ? $decoded : [];
                     }
                     $first = count($imagesArr) > 0 ? $imagesArr[0] : null;
@@ -96,29 +96,28 @@ class TemoignageController extends Controller
                 }
             }
             return (object)[
-                'id' => $temoignage->id,
-                'nom' => $temoignage->nom,
-                'description' => $temoignage->description,
-                'created_at' => $temoignage->created_at,
+                'id' => $priere->id,
+                'nom' => $priere->nom,
+                'description' => $priere->description,
+                'created_at' => $priere->created_at,
                 'media_type' => $isAudio ? 'audio' : ($isVideoLink ? 'video_link' : ($isVideoFile ? 'video_file' : ($isPdf ? 'pdf' : ($isImages ? 'images' : null)))),
                 'thumbnail_url' => $thumbnailUrl,
-                'video_url' => $isVideoFile ? asset('storage/' . $temoignage->media->url_fichier) : $thumbnailUrl,
-                'media_url' => $temoignage->media && !$isImages ? asset('storage/' . $temoignage->media->url_fichier) : null,
-                'has_thumbnail' => $temoignage->media && $temoignage->media->thumbnail ? true : ($isImages && !empty(json_decode($temoignage->media->url_fichier ?? '[]', true))),
-                'is_published' => $temoignage->media->is_published ?? true,
-                'images' => $isImages ? array_map(function ($p) { return asset('storage/' . $p); }, (array)(json_decode($temoignage->media->url_fichier ?? '[]', true) ?: [])) : [],
+                'video_url' => $isVideoFile ? asset('storage/' . $priere->media->url_fichier) : $thumbnailUrl,
+                'media_url' => $priere->media && !$isImages ? asset('storage/' . $priere->media->url_fichier) : null,
+                'has_thumbnail' => $priere->media && $priere->media->thumbnail ? true : ($isImages && !empty(json_decode($priere->media->url_fichier ?? '[]', true))),
+                'is_published' => $priere->media->is_published ?? true,
+                'images' => $isImages ? array_map(function ($p) { return asset('storage/' . $p); }, (array)(json_decode($priere->media->url_fichier ?? '[]', true) ?: [])) : [],
             ];
         });
-        // Envoyer chaque témoignage comme variable séparée
-        return view('admin.medias.temoignages.index', [
-            'temoignages' => $temoignages,
-            'temoignagesData' => $temoignagesData,
+        // Envoyer chaque prière comme variable séparée
+        return view('admin.medias.prieres.index', [
+            'prieres' => $prieres,
+            'prieresData' => $prieresData,
         ]);
-    }
-
-    public function store(Request $request)
+    }    
+public function store(Request $request)
     {
-        Log::info('TemoignageController@store: début', [
+        Log::info('PriereController@store: début', [
             'media_type' => $request->input('media_type'),
             'nom' => $request->input('nom'),
         ]);
@@ -184,7 +183,7 @@ class TemoignageController extends Controller
                 // Stockage direct du PDF
                 $filePath = $file->storeAs('pdfs', $uniqueName, 'public');
             } elseif ($request->media_type === 'images') {
-                Log::info('TemoignageController@store: type images détecté');
+                Log::info('PriereController@store: type images détecté');
                 $request->validate([
                     'images' => 'required|array|min:1',
                     'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
@@ -194,12 +193,12 @@ class TemoignageController extends Controller
                 // Stocker images multiples
                 $storedImages = [];
                 if ($request->hasFile('images')) {
-                    Log::info('TemoignageController@store: nombre de fichiers images', [
+                    Log::info('PriereController@store: nombre de fichiers images', [
                         'count' => is_countable($request->file('images')) ? count($request->file('images')) : null
                     ]);
                     foreach ($request->file('images') as $imgFile) {
                         if ($imgFile && $imgFile->isValid()) {
-                            Log::info('TemoignageController@store: fichier image valide', [
+                            Log::info('PriereController@store: fichier image valide', [
                                 'original_name' => $imgFile->getClientOriginalName(),
                                 'size' => $imgFile->getSize(),
                                 'mime' => $imgFile->getMimeType(),
@@ -207,9 +206,9 @@ class TemoignageController extends Controller
                             $base = pathinfo($imgFile->getClientOriginalName(), PATHINFO_FILENAME);
                             $ext = $imgFile->getClientOriginalExtension();
                             $unique = Str::slug($base, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $ext;
-                            $path = $imgFile->storeAs('images/temoignages', $unique, 'public');
+                            $path = $imgFile->storeAs('images/prieres', $unique, 'public');
                             $storedImages[] = $path;
-                            Log::info('TemoignageController@store: image stockée', ['path' => $path]);
+                            Log::info('PriereController@store: image stockée', ['path' => $path]);
                         }
                     }
                 }
@@ -230,7 +229,7 @@ class TemoignageController extends Controller
                         $thumbName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
                         $thumbUniqueName = 'thumb_' . Str::slug($thumbName, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $thumbnailFile->getClientOriginalExtension();
                         $thumbnailPath = $thumbnailFile->storeAs('thumbnails/images', $thumbUniqueName, 'public');
-                        Log::info('TemoignageController@store: image de couverture stockée', ['thumbnail' => $thumbnailPath]);
+                        Log::info('PriereController@store: image de couverture stockée', ['thumbnail' => $thumbnailPath]);
                     }
                 }
             }
@@ -275,53 +274,49 @@ class TemoignageController extends Controller
                 'update_by' => auth()->id(),
             ];
 
-            // Ajouter les images pour le type image
-            // Si images, on n'utilise plus la colonne images, tout est dans url_fichier JSON
-
-            Log::info('TemoignageController@store: création du média', [
+            Log::info('PriereController@store: création du média', [
                 'type' => $type,
                 'has_thumbnail' => (bool) $thumbnailPath,
                 'images_count' => $type === 'images' ? (is_countable($storedImages ?? null) ? count($storedImages) : null) : null,
             ]);
             $media = Media::create($mediaData);
-            Log::info('TemoignageController@store: média créé', ['media_id' => $media->id]);
+            Log::info('PriereController@store: média créé', ['media_id' => $media->id]);
 
-            // Créer le témoignage
-            $temoignage = Temoignage::create([
+            // Créer la prière
+            $priere = Priere::create([
                 'id_media' => $media->id,
                 'nom' => $request->nom,
                 'description' => $request->description,
                 'insert_by' => auth()->id(),
                 'update_by' => auth()->id(),
             ]);
-            Log::info('TemoignageController@store: témoignage créé', ['temoignage_id' => $temoignage->id]);
+            Log::info('PriereController@store: prière créée', ['priere_id' => $priere->id]);
 
-            notify()->success('Succès', 'Témoignage ajouté avec succès.');
-            return redirect()->route('temoignages.index');
+            notify()->success('Succès', 'Prière ajoutée avec succès.');
+            return redirect()->route('prieres.index');
         } catch (\Exception $e) {
-            Log::error('TemoignageController@store: erreur', [
+            Log::error('PriereController@store: erreur', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            Alert::error('Erreur', 'Impossible de créer le témoignage: ' . $e->getMessage());
+            Alert::error('Erreur', 'Impossible de créer la prière: ' . $e->getMessage());
             return back()->withInput();
         }
     }
 
-
-    public function edit(Temoignage $temoignage)
+    public function edit(Priere $priere)
     {
-        $temoignage->load('media');
+        $priere->load('media');
         return response()->json([
-            'nom' => $temoignage->nom,
-            'description' => $temoignage->description,
-            'media' => $temoignage->media
+            'nom' => $priere->nom,
+            'description' => $priere->description,
+            'media' => $priere->media
         ]);
     }
 
     public function update(Request $request, $id)
     {
-        Log::info('TemoignageController@update: début', [
+        Log::info('PriereController@update: début', [
             'id' => $id,
             'media_type' => $request->input('media_type'),
         ]);
@@ -335,12 +330,12 @@ class TemoignageController extends Controller
         try {
             DB::beginTransaction();
 
-            // Récupérer le témoignage existant
-            $temoignage = Temoignage::findOrFail($id);
-            $media = $temoignage->media;
+            // Récupérer la prière existante
+            $priere = Priere::findOrFail($id);
+            $media = $priere->media;
 
             if (!$media) {
-                throw new \Exception('Média introuvable pour ce témoignage');
+                throw new \Exception('Média introuvable pour cette prière');
             }
 
             $filePath = $media->url_fichier; // par défaut, garder l'ancien fichier
@@ -464,7 +459,7 @@ class TemoignageController extends Controller
                     $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
                 }
             } elseif ($request->media_type === 'images') {
-                Log::info('TemoignageController@update: type images détecté');
+                Log::info('PriereController@update: type images détecté');
                 $request->validate([
                     'images' => 'nullable',
                     'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
@@ -497,12 +492,12 @@ class TemoignageController extends Controller
                 $newImages = [];
 
                 if ($request->hasFile('images')) {
-                    Log::info('TemoignageController@update: nombre de nouveaux fichiers images', [
+                    Log::info('PriereController@update: nombre de nouveaux fichiers images', [
                         'count' => is_countable($request->file('images')) ? count($request->file('images')) : null
                     ]);
                     foreach ($request->file('images') as $imgFile) {
                         if ($imgFile && $imgFile->isValid()) {
-                            Log::info('TemoignageController@update: nouveau fichier image valide', [
+                            Log::info('PriereController@update: nouveau fichier image valide', [
                                 'original_name' => $imgFile->getClientOriginalName(),
                                 'size' => $imgFile->getSize(),
                                 'mime' => $imgFile->getMimeType(),
@@ -510,26 +505,26 @@ class TemoignageController extends Controller
                             $base = pathinfo($imgFile->getClientOriginalName(), PATHINFO_FILENAME);
                             $ext = $imgFile->getClientOriginalExtension();
                             $unique = Str::slug($base, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $ext;
-                            $path = $imgFile->storeAs('images/temoignages', $unique, 'public');
+                            $path = $imgFile->storeAs('images/prieres', $unique, 'public');
                             $newImages[] = $path;
-                            Log::info('TemoignageController@update: image stockée', ['path' => $path]);
+                            Log::info('PriereController@update: image stockée', ['path' => $path]);
                         }
                     }
                 }
 
                 // Gestion de la couverture
                 if ($request->hasFile('image_couverture_images')) {
-                    Log::info('TemoignageController@update: mise à jour image de couverture');
+                    Log::info('PriereController@update: mise à jour image de couverture');
                     if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
                         Storage::disk('public')->delete($media->thumbnail);
-                        Log::info('TemoignageController@update: ancienne couverture supprimée', ['thumbnail' => $media->thumbnail]);
+                        Log::info('PriereController@update: ancienne couverture supprimée', ['thumbnail' => $media->thumbnail]);
                     }
                     $thumbnailFile = $request->file('image_couverture_images');
                     if ($thumbnailFile->isValid()) {
                         $thumbName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
                         $thumbUniqueName = 'thumb_' . Str::slug($thumbName, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $thumbnailFile->getClientOriginalExtension();
                         $thumbnailPath = $thumbnailFile->storeAs('thumbnails/images', $thumbUniqueName, 'public');
-                        Log::info('TemoignageController@update: nouvelle couverture stockée', ['thumbnail' => $thumbnailPath]);
+                        Log::info('PriereController@update: nouvelle couverture stockée', ['thumbnail' => $thumbnailPath]);
                     }
                 }
 
@@ -545,129 +540,85 @@ class TemoignageController extends Controller
                 'update_by' => auth()->id(),
             ];
 
-            // Ajouter les images pour le type image
-            
-
             $media->update($updateData);
-            Log::info('TemoignageController@update: média mis à jour', [
+            Log::info('PriereController@update: média mis à jour', [
                 'media_id' => $media->id,
                 'type' => $media->type,
                 'has_thumbnail' => (bool) $media->thumbnail,
-                'images_count' => is_countable($media->images ?? null) ? count($media->images) : null,
             ]);
 
-            // Mise à jour du témoignage
-            $temoignage->update([
+            // Mise à jour de la prière
+            $priere->update([
                 'nom' => $request->nom,
                 'description' => $request->description,
                 'update_by' => auth()->id(),
             ]);
-            Log::info('TemoignageController@update: témoignage mis à jour', ['temoignage_id' => $temoignage->id]);
+            Log::info('PriereController@update: prière mise à jour', ['priere_id' => $priere->id]);
 
             DB::commit();
-            notify()->success('Succès', 'Témoignage mis à jour avec succès.');
-            return redirect()->route('temoignages.index');
+            notify()->success('Succès', 'Prière mise à jour avec succès.');
+            return redirect()->route('prieres.index');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('TemoignageController@update: erreur', [
+            Log::error('PriereController@update: erreur', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            Alert::error('Erreur', 'Impossible de mettre à jour le témoignage: ' . $e->getMessage());
+            Alert::error('Erreur', 'Impossible de mettre à jour la prière: ' . $e->getMessage());
             return back()->withInput();
         }
     }
 
-
-
     public function destroy($id)
     {
-        $temoignage = Temoignage::findOrFail($id);
+        $priere = Priere::findOrFail($id);
         try {
             DB::beginTransaction();
 
-            $temoignage->update([
+            $priere->update([
                 'is_deleted' => true,
                 'update_by' => auth()->id(),
             ]);
 
-            // Marquer également le média comme supprimé
-            if ($temoignage->media) {
-                $temoignage->media->update([
-                    'is_deleted' => true,
-                    'update_by' => auth()->id(),
-                ]);
-            }
-
             DB::commit();
-            notify()->success('Succès', 'Témoignage supprimé avec succès.');
-            return redirect()->route('temoignages.index');
+            notify()->success('Succès', 'Prière supprimée avec succès.');
+            return redirect()->route('prieres.index');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()
-                ->with('error', 'Erreur lors de la suppression: ' . $e->getMessage());
+            Log::error('PriereController@destroy: erreur', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            Alert::error('Erreur', 'Impossible de supprimer la prière: ' . $e->getMessage());
+            return back();
         }
     }
 
-    public function publish(Request $request, $id)
+    public function publish($id)
     {
-        $temoignage = Temoignage::findOrFail($id);
-
-        // Vérifier que c'est une vidéo
-        if (!$temoignage->media || !in_array($temoignage->media->type, ['video', 'link'])) {
-            Alert::error('Erreur', 'Seules les vidéos peuvent être publiées/dépubliées.');
-            return redirect()->back();
-        }
-
         try {
-            $temoignage->media->update([
-                'is_published' => true,
-                'update_by' => auth()->id(),
-            ]);
-
-            notify()->success('Succès', 'Témoignage vidéo publié avec succès.');
-            if ($request->ajax()) {
-                return response()->json(['success' => true]);
-            }
-            return redirect()->back();
+            $priere = Priere::findOrFail($id);
+            $priere->media->update(['is_published' => true]);
+            
+            notify()->success('Succès', 'Prière publiée avec succès.');
+            return redirect()->route('prieres.index');
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la publication: ' . $e->getMessage());
-            Alert::error('Erreur', 'Impossible de publier le témoignage.');
-            if ($request->ajax()) {
-                return response()->json(['success' => false], 500);
-            }
-            return redirect()->back();
+            Alert::error('Erreur', 'Impossible de publier la prière.');
+            return back();
         }
     }
 
-    public function unpublish(Request $request, $id)
+    public function unpublish($id)
     {
-        $temoignage = Temoignage::findOrFail($id);
-
-        // Vérifier que c'est une vidéo
-        if (!$temoignage->media || !in_array($temoignage->media->type, ['video', 'link'])) {
-            Alert::error('Erreur', 'Seules les vidéos peuvent être publiées/dépubliées.');
-            return redirect()->back();
-        }
-
         try {
-            $temoignage->media->update([
-                'is_published' => false,
-                'update_by' => auth()->id(),
-            ]);
-
-            notify()->success('Succès', 'Témoignage vidéo dépublié avec succès.');
-            if ($request->ajax()) {
-                return response()->json(['success' => true]);
-            }
-            return redirect()->back();
+            $priere = Priere::findOrFail($id);
+            $priere->media->update(['is_published' => false]);
+            
+            notify()->success('Succès', 'Prière dépubliée avec succès.');
+            return redirect()->route('prieres.index');
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la dépublication: ' . $e->getMessage());
-            Alert::error('Erreur', 'Impossible de dépublier le témoignage.');
-            if ($request->ajax()) {
-                return response()->json(['success' => false], 500);
-            }
-            return redirect()->back();
+            Alert::error('Erreur', 'Impossible de dépublier la prière.');
+            return back();
         }
     }
 }

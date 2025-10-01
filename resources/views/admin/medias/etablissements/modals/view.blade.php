@@ -17,7 +17,7 @@
             <p class="mb-1"><strong>Type:</strong> <span id="viewEtabType"></span></p>
             <p class="mb-1"><strong>Téléphone:</strong> <span id="viewEtabTel"></span></p>
             <p class="mb-1"><strong>Email:</strong> <span id="viewEtabEmail"></span></p>
-            <p class="mb-1"><strong>Localisation:</strong> <span id="viewEtabLoc"></span></p>
+            <p class="mb-1"><strong>Adresse:</strong> <span id="viewEtabAdresse"></span></p>
           </div>
         </div>
       </div>

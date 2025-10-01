@@ -51,6 +51,10 @@
                                 <input type="radio" name="media_type" id="editMediaTypePdf" value="pdf" autocomplete="off">
                                 <i class="fas fa-file-pdf"></i> PDF
                             </label>
+                            <label class="btn btn-outline-primary" id="editMediaTypeImagesLabel">
+                                <input type="radio" name="media_type" id="editMediaTypeImages" value="images" autocomplete="off">
+                                <i class="fas fa-images"></i> Images
+                            </label>
                         </div>
                     </div>
 
@@ -96,6 +100,29 @@
                         </div>
                     </div>
 
+                    <!-- Section Images pour ÉDITION -->
+                    <div id="editImageFileSection" class="d-none">
+                        <div class="form-group">
+                            <label class="font-weight-bold">Images existantes</label>
+                            <div id="existingImagesContainerEns" class="row"></div>
+                            <small class="form-text text-muted">Cochez les images à supprimer.</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="font-weight-bold">Ajouter des images</label>
+                            <div class="custom-file">
+                                                                <input type="file" name="images[]" id="editImageFiles" class="custom-file-input" multiple accept="image/*">
+                                <label class="custom-file-label" for="editImageFiles">Choisir des images</label>
+                            </div>
+                            <small class="form-text text-muted">Vous pouvez sélectionner plusieurs fichiers; vous pouvez rouvrir le sélecteur pour en ajouter.</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="font-weight-bold">Nouvelle image de couverture</label>
+                            <div class="custom-file">
+                                                                <input type="file" name="image_couverture_images" id="editImageCoverFile" class="custom-file-input" accept="image/*">
+                                <label class="custom-file-label" for="editImageCoverFile">Choisir une image de couverture</label>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Section Fichier Vidéo pour ÉDITION -->
                     <div id="editVideoFileSection" class="d-none">
                         <div class="form-group">

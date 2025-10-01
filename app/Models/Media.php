@@ -12,7 +12,7 @@ class Media extends Model
     // Table name
     protected $table = 'medias';
 
-    protected $fillable = ['nom', 'url_fichier', 'thumbnail', 'type', 'images', 'insert_by', 'update_by', 'is_deleted', 'is_published'];
+    protected $fillable = ['url_fichier', 'thumbnail', 'type', 'images', 'insert_by', 'update_by', 'is_deleted', 'is_published'];
 
     protected $casts = [
         'images' => 'array',
@@ -42,6 +42,16 @@ class Media extends Model
     public function temoignage()
     {
         return $this->hasOne(Temoignage::class, 'id_media');
+    }
+
+    public function programme()
+    {
+        return $this->hasOne(Programme::class, 'id_media');
+    }
+
+    public function priere()
+    {
+        return $this->hasOne(Priere::class, 'id_media');
     }
 
 }

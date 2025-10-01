@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->string('telephone')->nullable();
             $table->string('email')->nullable();
             $table->string('localisation')->nullable();
+            $table->string('adresse')->nullable();
             $table->string('image_path')->nullable();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_deleted')->default(false);

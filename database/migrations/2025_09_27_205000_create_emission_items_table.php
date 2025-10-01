@@ -11,10 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('emissions', function (Blueprint $table) {
+        Schema::create('emission_items', function (Blueprint $table) {
             $table->id();
-            $table->string('nom');
-            $table->text('description');
+            $table->foreignId('id_Emission')->constrained('emissions');
+            $table->string('titre_video');
+            $table->text('description_video')->nullable();
+            $table->enum('type_video', ['video', 'link']);
+            $table->string('video_url')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->foreignId('insert_by')->constrained('users');
             $table->foreignId('update_by')->constrained('users');
             $table->boolean('is_deleted')->default(false);
@@ -27,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('emissions');
+        Schema::dropIfExists('emission_items');
     }
 };

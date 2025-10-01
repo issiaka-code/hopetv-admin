@@ -1,6 +1,6 @@
 @extends('admin.master')
 
-@section('title', 'Gestion des Témoignages')
+@section('title', 'Gestion des Home Charities')
 
 @push('styles')
     <style>
@@ -27,7 +27,7 @@
             margin-bottom: 0;
         }
 
-        .temoignage-card {
+        .home-charity-card {
             border-radius: 10px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             border: none;
@@ -36,12 +36,12 @@
             height: 100%;
         }
 
-        .temoignage-card:hover {
+        .home-charity-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
 
-        .temoignage-thumbnail-container {
+        .home-charity-thumbnail-container {
             overflow: hidden;
             height: 180px;
             position: relative;
@@ -51,15 +51,15 @@
             justify-content: center;
         }
 
-        .temoignage-thumbnail {
+        .home-charity-thumbnail {
             cursor: pointer;
             height: 100%;
             width: 100%;
         }
 
-        .temoignage-thumbnail video,
-        .temoignage-thumbnail img,
-        .temoignage-thumbnail iframe {
+        .home-charity-thumbnail video,
+        .home-charity-thumbnail img,
+        .home-charity-thumbnail iframe {
             object-fit: cover;
             height: 100%;
             width: 100%;
@@ -80,8 +80,8 @@
             color: #e74a3b;
         }
 
-        .temoignage-card:hover .temoignage-thumbnail video,
-        .temoignage-card:hover .temoignage-thumbnail img {
+        .home-charity-card:hover .home-charity-thumbnail video,
+        .home-charity-card:hover .home-charity-thumbnail img {
             transform: scale(1.05);
         }
 
@@ -105,11 +105,11 @@
             color: white;
         }
 
-        .temoignage-thumbnail:hover .thumbnail-overlay {
+        .home-charity-thumbnail:hover .thumbnail-overlay {
             opacity: 1;
         }
 
-        .temoignage-card .card-title {
+        .home-charity-card .card-title {
             font-size: 1.1rem;
             margin-bottom: 0.5rem;
             white-space: nowrap;
@@ -117,7 +117,7 @@
             text-overflow: ellipsis;
         }
 
-        .temoignage-card .card-text {
+        .home-charity-card .card-text {
             height: 40px;
             overflow: hidden;
             margin-bottom: 1rem;
@@ -134,13 +134,13 @@
         }
 
         /* Styles pour la grille responsive */
-        #temoignages-grid {
+        #home-charities-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.5rem;
         }
 
-        .temoignage-grid-item {
+        .home-charity-grid-item {
             width: 100%;
         }
 
@@ -159,29 +159,29 @@
 
         /* Responsive improvements */
         @media (max-width: 1400px) {
-            #temoignages-grid {
+            #home-charities-grid {
                 grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             }
         }
 
         @media (max-width: 1200px) {
-            #temoignages-grid {
+            #home-charities-grid {
                 grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
                 gap: 1.25rem;
             }
 
-            .temoignage-thumbnail-container {
+            .home-charity-thumbnail-container {
                 height: 160px;
             }
         }
 
         @media (max-width: 992px) {
-            #temoignages-grid {
+            #home-charities-grid {
                 grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
                 gap: 1rem;
             }
 
-            .temoignage-thumbnail-container {
+            .home-charity-thumbnail-container {
                 height: 140px;
             }
 
@@ -195,12 +195,12 @@
         }
 
         @media (max-width: 768px) {
-            #temoignages-grid {
+            #home-charities-grid {
                 grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
                 gap: 0.875rem;
             }
 
-            .temoignage-thumbnail-container {
+            .home-charity-thumbnail-container {
                 height: 120px;
             }
 
@@ -215,14 +215,14 @@
         }
 
         @media (max-width: 576px) {
-            #temoignages-grid {
+            #home-charities-grid {
                 grid-template-columns: 1fr;
                 gap: 1rem;
                 max-width: 400px;
                 margin: 0 auto;
             }
 
-            .temoignage-thumbnail-container {
+            .home-charity-thumbnail-container {
                 height: 180px;
             }
 
@@ -254,7 +254,7 @@
         }
 
         @media (max-width: 400px) {
-            .temoignage-thumbnail-container {
+            .home-charity-thumbnail-container {
                 height: 150px;
             }
 
@@ -276,7 +276,7 @@
 
         /* Touch device improvements */
         @media (hover: none) {
-            .temoignage-card:hover {
+            .home-charity-card:hover {
                 transform: none;
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             }
@@ -320,22 +320,22 @@
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="d-flex justify-content-between align-items-center section-header">
-                        <h2 class="section-title">Témoignages disponibles</h2>
+                        <h2 class="section-title">Home Charities disponibles</h2>
                         <button type="button" class="btn btn-primary" data-toggle="modal"
-                            data-target="#addTemoignageModal">
-                            <i class="fas fa-plus"></i> Ajouter un témoignage
+                            data-target="#addHomeCharityModal">
+                            <i class="fas fa-plus"></i> Ajouter une charité
                         </button>
                     </div>
                 </div>
             </div>
 
             <div class="row mb-4">
-                <form method="GET" action="{{ route('temoignages.index') }}" class="w-100">
+                <form method="GET" action="{{ route('home-charities.index') }}" class="w-100">
                     <div class="row g-2 d-flex flex-row justify-content-end align-items-center">
                         <!-- Champ recherche -->
                         <div class="col-3">
                             <input type="text" name="search" value="{{ request('search') }}" class="form-control"
-                                placeholder="Rechercher un témoignage...">
+                                placeholder="Rechercher une charité...">
                         </div>
 
                         <!-- Filtre par type -->
@@ -349,7 +349,7 @@
                                     vidéo</option>
                                 <option value="pdf" {{ request('type') === 'pdf' ? 'selected' : '' }}>PDF</option>
                                 <option value="images" {{ request('type') === 'images' ? 'selected' : '' }}>Images</option>
-                                
+
                             </select>
                         </div>
                         <!-- Bouton recherche -->
@@ -359,7 +359,7 @@
                             </button>
                         </div>
                         <div class="col-md-2 my-1">
-                            <a href="{{ route('temoignages.index') }}" class="btn btn-outline-secondary w-100">
+                            <a href="{{ route('home-charities.index') }}" class="btn btn-outline-secondary w-100">
                                 <i class="fas fa-sync py-2"></i> Réinitialiser
                             </a>
                         </div>
@@ -367,36 +367,37 @@
                 </form>
             </div>
 
-            <!-- Grille de témoignages -->
+            <!-- Grille de charités -->
             <div class="row">
                 <div class="col-12">
-                    <div id="temoignages-grid">
-                        @forelse($temoignagesData as $temoignageData)
+                    <div id="home-charities-grid">
+                        @forelse($homeCharitiesData as $homeCharityData)
                             @php
-                                $id = $temoignageData->id;
-                                $nom = $temoignageData->nom;
-                                $description = $temoignageData->description;
-                                $created_at = $temoignageData->created_at;
-                                $media_type = $temoignageData->media_type;
-                                $thumbnail_url = $temoignageData->thumbnail_url;
-                                $media_url = $temoignageData->media_url;
-                                $is_published = $temoignageData->is_published ?? false;
-                                
+                                $id = $homeCharityData->id;
+                                $nom = $homeCharityData->nom;
+                                $description = $homeCharityData->description;
+                                $created_at = $homeCharityData->created_at;
+                                $media_type = $homeCharityData->media_type;
+                                $thumbnail_url = $homeCharityData->thumbnail_url;
+                                $media_url = $homeCharityData->media_url;
+                                $is_published = $homeCharityData->is_published ?? false;
+
                             @endphp
 
-                            <div class="temoignage-grid-item">
-                                <div class="card temoignage-card">
-                                    <div class="temoignage-thumbnail-container">
-                                            <div class="temoignage-thumbnail position-relative"
-                                            data-temoignage-url="{{ $thumbnail_url }}"
-                                            data-video-url="{{ $temoignageData->video_url ?? '' }}"
-                                            data-temoignage-name="{{ $nom }}"
-                                                data-media-url="{{ $media_url }}" data-media-type="{{ $media_type }}"
-                                            data-has-thumbnail="{{ $temoignageData->has_thumbnail ? 'true' : 'false' }}"
-                                            data-images='@json($temoignageData->images ?? [])'>
+                            <div class="home-charity-grid-item">
+                                <div class="card home-charity-card">
+                                    <div class="home-charity-thumbnail-container">
+                                        <div class="home-charity-thumbnail position-relative"
+                                            data-home-charity-url="{{ $thumbnail_url }}"
+                                            data-video-url="{{ $homeCharityData->video_url ?? '' }}"
+                                            data-home-charity-name="{{ $nom }}" data-title="{{ $nom }}"
+                                            data-description="{{ $description }}" data-media-url="{{ $media_url }}"
+                                            data-media-type="{{ $media_type }}"
+                                            data-has-thumbnail="{{ $homeCharityData->has_thumbnail ? 'true' : 'false' }}"
+                                            data-images='@json($homeCharityData->images ?? [])'>
 
                                             <!-- Afficher l'image de couverture ou icône par défaut -->
-                                            @if ($temoignageData->has_thumbnail)
+                                            @if ($homeCharityData->has_thumbnail)
                                                 <img src="{{ $thumbnail_url }}" alt="{{ $nom }}"
                                                     style="width: 100%; height: 100%; object-fit: cover;">
                                             @else
@@ -431,8 +432,10 @@
                                                                 ? 'Lien vidéo'
                                                                 : ($media_type === 'video_file'
                                                                     ? 'Fichier vidéo'
-                                                                    : ($media_type === 'images' ? 'Images' : $media_type)))),
-                                                )}}
+                                                                    : ($media_type === 'images'
+                                                                        ? 'Images'
+                                                                        : $media_type)))),
+                                                ) }}
                                             </span>
 
                                             <!-- Badge statut publication (uniquement pour les vidéos) -->
@@ -455,30 +458,30 @@
                                             <small class="text-muted mb-1">{{ $created_at->format('d/m/Y') }}</small>
 
                                             <div class="btn-group">
-                                                <button class="btn btn-sm btn-outline-info view-temoignage-btn rounded"
-                                                    title="Voir le témoignage" data-temoignage-url="{{ $thumbnail_url }}"
+                                                <button class="btn btn-sm btn-outline-info view-home-charity-btn rounded"
+                                                    title="Voir la charité" data-home-charity-url="{{ $thumbnail_url }}"
                                                     data-media-url="{{ $media_url }}"
-                                                    data-temoignage-name="{{ $nom }}"
+                                                    data-home-charity-name="{{ $nom }}"
                                                     data-title="{{ $nom }}"
                                                     data-description="{{ $description }}"
                                                     data-media-type="{{ $media_type }}"
-                                                    data-images='@json($temoignageData->images ?? [])'>
+                                                    data-images='@json($homeCharityData->images ?? [])'>
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                                 <button
-                                                    class="btn btn-sm btn-outline-primary edit-temoignage-btn mx-1 rounded"
-                                                    title="Modifier le témoignage"
-                                                    data-temoignage-id="{{ $id }}">
+                                                    class="btn btn-sm btn-outline-primary edit-home-charity-btn mx-1 rounded"
+                                                    title="Modifier la charité"
+                                                    data-home-charity-id="{{ $id }}">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
 
-                                                <form action="{{ route('temoignages.destroy', $id) }}" method="POST"
+                                                <form action="{{ route('home-charities.destroy', $id) }}" method="POST"
                                                     class="d-inline delete-form">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-outline-danger rounded"
-                                                        title="Supprimer le témoignage"
-                                                        onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce témoignage ?')">
+                                                        title="Supprimer la charité"
+                                                        onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette charité ?')">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </form>
@@ -488,10 +491,12 @@
                                                     <button
                                                         class="btn btn-sm btn-outline-{{ $is_published ? 'success' : 'secondary' }} toggle-publish-btn mx-1 rounded"
                                                         title="{{ $is_published ? 'Dépublier' : 'Publier' }} la vidéo"
-                                                        data-temoignage-id="{{ $id }}"
+                                                        data-home-charity-id="{{ $id }}"
                                                         data-status="{{ $is_published ? 1 : 0 }}">
-                                                        <i class="fas fa-{{ $is_published ? 'toggle-on' : 'toggle-off' }}"></i>
-                                                        <span class="p-1">{{ $is_published ? 'Publié' : 'Non publié' }}</span>
+                                                        <i
+                                                            class="fas fa-{{ $is_published ? 'toggle-on' : 'toggle-off' }}"></i>
+                                                        <span
+                                                            class="p-1">{{ $is_published ? 'Publié' : 'Non publié' }}</span>
                                                     </button>
                                                 @endif
                                             </div>
@@ -503,8 +508,8 @@
                     </div>
                     <div class="col-12 text-center py-5">
                         <div class="empty-state">
-                            <i class="fas fa-comments fa-4x text-muted mb-3"></i>
-                            <h4 class="text-muted">Aucun témoignage disponible</h4>
+                            <i class="fas fa-heart fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">Aucune charité disponible</h4>
                         </div>
                     </div>
                     @endforelse
@@ -512,18 +517,18 @@
             </div>
 
             <!-- Pagination si nécessaire -->
-            @if ($temoignages->hasPages())
+            @if ($homeCharities->hasPages())
                 <div class="d-flex justify-content-center mt-4">
-                    {{ $temoignages->appends(request()->query())->links() }}
+                    {{ $homeCharities->appends(request()->query())->links() }}
                 </div>
             @endif
         </div>
     </section>
 
     <!-- Modals -->
-    @include('admin.medias.temoignages.modals.add')
-    @include('admin.medias.temoignages.modals.edit')
-    @include('admin.medias.temoignages.modals.view')
+    @include('admin.medias.home-charities.modals.add')
+    @include('admin.medias.home-charities.modals.edit')
+    @include('admin.medias.home-charities.modals.view')
 @endsection
 
 @push('scripts')
@@ -532,13 +537,15 @@
             // ===== TOGGLE PUBLICATION (comme établissements) =====
             $(document).on('click', '.toggle-publish-btn', function() {
                 const $btn = $(this);
-                const id = $btn.data('temoignage-id');
+                const id = $btn.data('home-charity-id');
                 const isPublished = Number($btn.data('status')) === 1;
-                const url = isPublished
-                    ? "{{ url('temoignages') }}/" + id + "/unpublish"
-                    : "{{ url('temoignages') }}/" + id + "/publish";
+                const url = isPublished ?
+                    "{{ url('home-charities') }}/" + id + "/unpublish" :
+                    "{{ url('home-charities') }}/" + id + "/publish";
 
-                $.post(url, { _token: '{{ csrf_token() }}' })
+                $.post(url, {
+                        _token: '{{ csrf_token() }}'
+                    })
                     .done(function() {
                         // Rafraîchir pour refléter l'état (simple et robuste)
                         window.location.reload();
@@ -550,7 +557,7 @@
             // Accumulate multiple selections for images[]
             let addImageFilesDT = null;
             // ===== GESTION DU FORMULAIRE D'AJOUT =====
-            $('input[name="media_type"]', '#addTemoignageForm').change(function() {
+            $('input[name="media_type"]', '#addHomeCharityForm').change(function() {
                 const selectedType = $(this).val();
                 $('#addAudioFileSection, #addVideoFileSection, #addVideoLinkSection, #addPdfFileSection, #addImageFileSection')
                     .addClass('d-none');
@@ -656,8 +663,8 @@
                     }
                 });
 
-            $('#addTemoignageModal').on('hidden.bs.modal', function() {
-                $('#addTemoignageForm')[0].reset();
+            $('#addHomeCharityModal').on('hidden.bs.modal', function() {
+                $('#addHomeCharityForm')[0].reset();
                 $('#addAudioFile, #addVideoFile, #addPdfFile')
                     .next('.custom-file-label').html('Choisir un fichier');
                 $('#addAudioImageFile, #addVideoImageFile, #addPdfImageFile')
@@ -675,11 +682,10 @@
             });
 
             // ===== GESTION DU FORMULAIRE D'ÉDITION =====
-            $('input[name="media_type"]', '#editTemoignageForm').change(function() {
+            $('input[name="media_type"]', '#editHomeCharityForm').change(function() {
                 const selectedType = $(this).val();
                 $('#editAudioFileSection, #editVideoFileSection, #editVideoLinkSection, #editPdfFileSection, #editImageFileSection')
                     .addClass('d-none');
-                $('#editAudioFile, #editVideoFile, #editVideoLink, #editPdfFile, #editImageFiles, #editImageCoverFile').removeAttr('required');
 
                 if (selectedType === 'audio') {
                     $('#editAudioFileSection').removeClass('d-none');
@@ -687,217 +693,148 @@
                     $('#editVideoFileSection').removeClass('d-none');
                 } else if (selectedType === 'video_link') {
                     $('#editVideoLinkSection').removeClass('d-none');
-                    $('#editVideoLink').attr('required', 'required');
                 } else if (selectedType === 'pdf') {
                     $('#editPdfFileSection').removeClass('d-none');
                 } else if (selectedType === 'images') {
                     $('#editImageFileSection').removeClass('d-none');
-                    $('#editImageFiles, #editImageCoverFile').attr('required', 'required');
                 }
             });
 
-            $('#editAudioFile, #editVideoFile, #editPdfFile, #editAudioImageFile, #editVideoImageFile, #editPdfImageFile, #editImageFiles, #editImageCoverFile')
-                .on('change', function() {
-                    let fileName = $(this).val().split('\\').pop();
-                    $(this).next('.custom-file-label').addClass("selected").html(fileName ||
-                        'Choisir un nouveau fichier');
-                });
+            // ===== GESTION DES BOUTONS D'ÉDITION =====
+            $(document).on('click', '.edit-home-charity-btn', function() {
+                const homeCharityId = $(this).data('home-charity-id');
 
-            $(document).on('click', '.edit-temoignage-btn', function() {
-                const temoignageId = $(this).data('temoignage-id');
-                $.ajax({
-                    url: "{{ route('temoignages.edit', ':id') }}".replace(':id', temoignageId),
-                    method: 'GET',
-                    success: function(data) {
-                        $('#editTemoignageNom').val(data.nom);
-                        $('#editTemoignageDescription').val(data.description);
-                        $('#editTemoignageForm').attr('action',
-                            "{{ route('temoignages.update', ':id') }}".replace(':id',
-                                temoignageId));
+                // Récupérer les données de la charité via AJAX
+                $.get(`{{ url('home-charities') }}/${homeCharityId}/edit`)
+                    .done(function(data) {
+                        // Remplir le formulaire d'édition
+                        $('#editHomeCharityNom').val(data.nom);
+                        $('#editHomeCharityDescription').val(data.description);
 
+                        // Définir l'action du formulaire
+                        $('#editHomeCharityForm').attr('action',
+                            `{{ url('home-charities') }}/${homeCharityId}`);
+
+                        // Sélectionner le type de média approprié
                         if (data.media) {
-                            let mediaType = data.media.type;
-                            if (mediaType === 'audio') {
-                                $('#editMediaTypeAudio').prop('checked', true).trigger(
-                                    'change');
-                                $('#editCurrentAudioName').text(data.media.url_fichier.split(
-                                    '/').pop());
-                                $('#editCurrentAudio').show();
-                                $('#editCurrentVideo, #editCurrentLink, #editCurrentPdf')
-                                    .hide();
-                            } else if (mediaType === 'video') {
-                                $('#editMediaTypeVideoFile').prop('checked', true).trigger(
-                                    'change');
-                                $('#editCurrentVideoName').text(data.media.url_fichier.split(
-                                    '/').pop());
-                                $('#editCurrentVideo').show();
-                                $('#editCurrentAudio, #editCurrentLink, #editCurrentPdf')
-                                    .hide();
+                            const mediaType = data.media.type === 'link' ? 'video_link' :
+                                data.media.type === 'video' ? 'video_file' :
+                                data.media.type;
 
-                                // Gestion de l'image de couverture
-                                if (data.media.thumbnail) {
-                                    const thumbnailName = data.media.thumbnail.split('/').pop();
-                                    $('#editCurrentThumbnailName').text(thumbnailName);
-                                    $('#editCurrentThumbnailPreview').attr('src', '/storage/' +
-                                        data.media.thumbnail).show();
-                                    $('#editCurrentThumbnail').show();
-                                } else {
-                                    $('#editCurrentThumbnail').hide();
-                                }
-                            } else if (mediaType === 'link') {
-                                $('#editMediaTypeVideoLink').prop('checked', true).trigger(
-                                    'change');
-                                $('#editVideoLink').val(data.media.url_fichier);
-                                $('#editCurrentLinkValue').text(data.media.url_fichier);
-                                $('#editViewCurrentLink').attr('href', data.media.url_fichier);
-                                $('#editCurrentLink').show();
-                                $('#editCurrentAudio, #editCurrentVideo, #editCurrentPdf')
-                                    .hide();
-                            } else if (mediaType === 'pdf') {
-                                $('#editMediaTypePdf').prop('checked', true).trigger(
-                                    'change');
-                                $('#editCurrentPdfName').text(data.media.url_fichier.split(
-                                    '/').pop());
-                                $('#editCurrentPdf').show();
-                                $('#editCurrentAudio, #editCurrentVideo, #editCurrentLink')
-                                    .hide();
-                            } else if (data.media && data.media.type === 'images') {
-                                $('#editMediaTypeImages').prop('checked', true).trigger('change');
-                                // Render existing images with checkboxes
-                                const container = $('#existingImagesContainer');
-                                container.empty();
-                                let imgs = [];
-                                try { imgs = JSON.parse(data.media.url_fichier || '[]') || []; } catch (e) { imgs = []; }
-                                imgs.forEach(function(path) {
-                                    const url = '/storage/' + path;
-                                    const id = 'del_' + btoa(path).replace(/[^a-zA-Z0-9]/g,'');
-                                    const col = $('<div class="col-6 col-md-4 col-lg-3 mb-2"></div>');
-                                    const card = $('<div class="border rounded p-2 h-100"></div>');
-                                    card.append('<img src="'+url+'" class="img-fluid mb-2" style="height:120px;object-fit:cover;width:100%" />');
-                                    const chk = $('<div class="custom-control custom-checkbox">\
-                                        <input type="checkbox" class="custom-control-input" id="'+id+'" name="existing_images_delete[]" value="'+path+'">\
-                                        <label class="custom-control-label" for="'+id+'">Supprimer</label>\
-                                    </div>');
-                                    card.append(chk);
-                                    col.append(card);
-                                    container.append(col);
-                                });
-                            }
+                            $(`#editMediaType${mediaType.charAt(0).toUpperCase() + mediaType.slice(1).replace('_', '')}`)
+                                .prop('checked', true);
+                            $(`#editMediaType${mediaType.charAt(0).toUpperCase() + mediaType.slice(1).replace('_', '')}Label`)
+                                .addClass('active');
+                            $('input[name="media_type"]', '#editHomeCharityForm').trigger('change');
                         }
-                        $('#editTemoignageModal').modal('show');
-                    },
-                    error: function() {
-                        alert('Erreur lors du chargement des données du témoignage');
-                    }
-                });
+
+                        // Afficher le modal
+                        $('#editHomeCharityModal').modal('show');
+                    })
+                    .fail(function() {
+                        alert('Erreur lors du chargement des données de la charité');
+                    });
             });
 
-            // ===== VISUALISATION DES TÉMOIGNAGES =====
-            $(document).on('click', '.view-temoignage-btn, .temoignage-thumbnail', function() {
-                const temoignageUrl = $(this).data('temoignage-url');
-                const temoignageName = $(this).data('temoignage-name');
-                const mediaType = $(this).data('media-type');
-                const temoignageDescription = $(this).closest('.temoignage-card').find('.card-text').attr(
-                    'title') || '';
-                // Masquer tous les lecteurs et réinitialiser
+            // ===== FONCTION POUR OUVRIR LE MODAL DE VISUALISATION =====
+            function openHomeCharityViewModal(element) {
+                const title = element.data('home-charity-name') || element.data('title');
+                const description = element.data('description');
+                const mediaType = element.data('media-type');
+                const mediaUrl = element.data('media-url');
+                const homeCharityUrl = element.data('home-charity-url');
+                const images = element.data('images') || [];
+
+                // Mettre à jour le titre et la description
+                $('#homeCharityViewModalLabel').text(title);
+                $('#homeCharityDescription').text(description);
+
+                // Cacher tous les lecteurs
                 $('#audioPlayerContainer, #videoPlayerContainer, #iframePlayerContainer, #pdfViewerContainer, #imageCarouselContainer')
-                    .addClass(
-                        'd-none');
-                $('#modalAudioPlayer').attr('src', '').get(0).load();
-                $('#modalVideoPlayer').attr('src', '').get(0).load();
-                $('#modalIframePlayer').attr('src', '');
-                $('#modalPdfViewer').attr('src', '');
-                $('#imageCarouselInner').empty();
+                    .addClass('d-none');
 
-                // Récupérer l'URL du média réel
-                const mediaUrl = $(this).data('media-url');
-
+                // Afficher le bon lecteur selon le type
                 if (mediaType === 'audio') {
-                    if (mediaUrl) {
-                        $('#modalAudioPlayer').attr('src', mediaUrl);
-                        $('#modalAudioPlayer')[0].load();
-                        $('#audioPlayerContainer').removeClass('d-none');
-                        $('#mediaTypeBadge').text('Audio').removeClass('d-none');
-                    } else {
-                        console.log('No audio URL found');
-                    }
-                } else if (mediaType === 'video_link') {
-                    $('#modalIframePlayer').attr('src', temoignageUrl);
-                    $('#iframePlayerContainer').removeClass('d-none');
-                    $('#mediaTypeBadge').text('Vidéo en ligne').removeClass('d-none');
-                } else if (mediaType === 'video_file') {
-                    // Utiliser l'URL de la vidéo pour la lecture
-                    const videoUrl = $(this).data('video-url') || mediaUrl;
-                    if (videoUrl) {
-                        $('#modalVideoPlayer').attr('src', videoUrl);
-                        $('#modalVideoPlayer')[0].load();
-                        $('#videoPlayerContainer').removeClass('d-none');
-                        $('#mediaTypeBadge').text('Vidéo locale').removeClass('d-none');
-                    }
-                } else if (mediaType === 'pdf') {
-                    if (mediaUrl) {
-                        // Charger le PDF avec les contrôles natifs du navigateur
-                        $('#modalPdfViewer').attr('src', mediaUrl + '#view=FitH&toolbar=1&navpanes=1');
-                        $('#pdfDownload').attr('href', mediaUrl);
-                        $('#pdfViewerContainer').removeClass('d-none');
-                        $('#mediaTypeBadge').text('PDF').removeClass('d-none');
-                    } else {
-                        console.log('No PDF URL found');
-                    }
-                } else if (mediaType === 'images') {
-                    const images = $(this).data('images') || [];
-                    if (images.length > 0) {
-                        images.forEach(function(url, idx) {
-                            const active = idx === 0 ? 'active' : '';
-                            const item = '<div class="carousel-item ' + active + '">\
-    <img class="d-block w-100" src="' + url + '" alt="Image ' + (idx + 1) + '" style="max-height: 450px; object-fit: contain; background: #000;"/>\
-</div>';
-                            $('#imageCarouselInner').append(item);
+                    const audioPlayer = $('#modalAudioPlayer')[0];
+                    audioPlayer.src = mediaUrl;
+                    $('#audioPlayerContainer').removeClass('d-none');
+                    $('#mediaTypeBadge').text('Audio').removeClass().addClass('badge badge-pill badge-info');
+
+                    // Forcer l'autoplay pour l'audio
+                    setTimeout(() => {
+                        audioPlayer.play().catch(e => {
+                            console.log('Autoplay audio bloqué par le navigateur:', e);
                         });
-                        $('#imageCarouselContainer').removeClass('d-none');
-                        $('#mediaTypeBadge').text('Images').removeClass('d-none');
+                    }, 500);
+                } else if (mediaType === 'video_file') {
+                    const videoPlayer = $('#modalVideoPlayer')[0];
+                    videoPlayer.src = mediaUrl;
+                    $('#videoPlayerContainer').removeClass('d-none');
+                    $('#mediaTypeBadge').text('Fichier Vidéo').removeClass().addClass(
+                        'badge badge-pill badge-success');
+
+                    // Forcer l'autoplay pour la vidéo
+                    setTimeout(() => {
+                        videoPlayer.play().catch(e => {
+                            console.log('Autoplay vidéo bloqué par le navigateur:', e);
+                        });
+                    }, 500);
+                } else if (mediaType === 'video_link') {
+                    // Pour les vidéos YouTube/Vimeo, ajouter autoplay dans l'URL
+                    let autoplayUrl = homeCharityUrl;
+                    if (homeCharityUrl.includes('youtube.com/embed/')) {
+                        autoplayUrl += (homeCharityUrl.includes('?') ? '&' : '?') + 'autoplay=1';
+                    } else if (homeCharityUrl.includes('vimeo.com/')) {
+                        autoplayUrl += (homeCharityUrl.includes('?') ? '&' : '?') + 'autoplay=1';
                     }
+                    $('#modalIframePlayer').attr('src', autoplayUrl);
+                    $('#iframePlayerContainer').removeClass('d-none');
+                    $('#mediaTypeBadge').text('Lien Vidéo').removeClass().addClass(
+                        'badge badge-pill badge-primary');
+                } else if (mediaType === 'pdf') {
+                    $('#modalPdfViewer').attr('src', mediaUrl);
+                    $('#pdfViewerContainer').removeClass('d-none');
+                    $('#mediaTypeBadge').text('PDF').removeClass().addClass('badge badge-pill badge-danger');
+                } else if (mediaType === 'images') {
+                    // Construire le carrousel d'images
+                    const carouselInner = $('#imageCarouselInner');
+                    carouselInner.empty();
+
+                    images.forEach((imageUrl, index) => {
+                        const activeClass = index === 0 ? 'active' : '';
+                        carouselInner.append(`
+                            <div class="carousel-item ${activeClass}">
+                                <img src="${imageUrl}" class="d-block w-100" alt="Image ${index + 1}" style="max-height: 400px; object-fit: contain;">
+                            </div>
+                        `);
+                    });
+
+                    $('#imageCarouselContainer').removeClass('d-none');
+                    $('#mediaTypeBadge').text('Images').removeClass().addClass('badge badge-pill badge-warning');
                 }
-                $('#temoignageTitle').text(temoignageName);
-                $('#temoignageDescription').text(temoignageDescription);
-                $('#temoignageViewModal').modal('show');
+
+                // Afficher le modal
+                $('#homeCharityViewModal').modal('show');
+            }
+
+            // ===== GESTION DES BOUTONS DE VISUALISATION =====
+            $(document).on('click', '.view-home-charity-btn', function() {
+                openHomeCharityViewModal($(this));
             });
 
-            // ===== NETTOYAGE DU MODAL =====
-            $('#temoignageViewModal').on('hidden.bs.modal', function() {
-                // Arrêter tous les médias
-                $('#modalAudioPlayer').get(0).pause();
-                $('#modalVideoPlayer').get(0).pause();
+            // ===== GESTION DU CLIC SUR L'IMAGE DE COUVERTURE =====
+            $(document).on('click', '.home-charity-thumbnail', function() {
+                openHomeCharityViewModal($(this));
+            });
 
-                // Réinitialiser les sources
-                $('#modalAudioPlayer').attr('src', '');
-                $('#modalVideoPlayer').attr('src', '');
+            // Nettoyer les lecteurs quand le modal se ferme
+            $('#homeCharityViewModal').on('hidden.bs.modal', function() {
+                $('#modalAudioPlayer, #modalVideoPlayer').each(function() {
+                    this.pause();
+                    this.currentTime = 0;
+                });
                 $('#modalIframePlayer').attr('src', '');
                 $('#modalPdfViewer').attr('src', '');
-
-                // Masquer tous les lecteurs
-                $('#audioPlayerContainer, #videoPlayerContainer, #iframePlayerContainer, #pdfViewerContainer, #imageCarouselContainer')
-                    .addClass(
-                        'd-none');
-
-                // Vider les informations
-                $('#temoignageTitle, #temoignageDescription, #mediaTypeBadge').text('');
-            });
-
-            // ===== LECTURE AUTOMATIQUE =====
-            $('#temoignageViewModal').on('shown.bs.modal', function() {
-                const audioPlayer = $('#modalAudioPlayer').get(0);
-                const videoPlayer = $('#modalVideoPlayer').get(0);
-
-                if (audioPlayer && !$('#audioPlayerContainer').hasClass('d-none')) {
-                    audioPlayer.play().catch(function(error) {
-                        console.log('Lecture audio automatique bloquée:', error);
-                    });
-                } else if (videoPlayer && !$('#videoPlayerContainer').hasClass('d-none')) {
-                    videoPlayer.play().catch(function(error) {
-                        console.log('Lecture vidéo automatique bloquée:', error);
-                    });
-                }
             });
         });
     </script>

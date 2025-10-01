@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Media;
-use App\Models\Temoignage;
+use App\Models\HomeCharity;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,11 +12,11 @@ use Illuminate\Support\Facades\Storage;
 use RealRashid\SweetAlert\Facades\Alert;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 
-class TemoignageController extends Controller
+class HomeCharityController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Temoignage::with('media')->where('is_deleted', false)->latest();
+        $query = HomeCharity::with('media')->where('is_deleted', false)->latest();
 
         // Recherche
         if ($request->filled('search')) {
@@ -41,21 +41,21 @@ class TemoignageController extends Controller
             });
         }
 
-        $temoignages = $query->paginate(12);
+        $homeCharities = $query->paginate(12);
 
         // Préparer chaque variable pour la vue et JS
-        $temoignagesData = collect($temoignages->items())->map(function ($temoignage) {
-            $isAudio = $temoignage->media && $temoignage->media->type === 'audio';
-            $isVideoLink = $temoignage->media && $temoignage->media->type === 'link';
-            $isVideoFile = $temoignage->media && $temoignage->media->type === 'video';
-            $isPdf = $temoignage->media && $temoignage->media->type === 'pdf';
-            $isImages = $temoignage->media && $temoignage->media->type === 'images';
-            
+        $homeCharitiesData = collect($homeCharities->items())->map(function ($homeCharity) {
+            $isAudio = $homeCharity->media && $homeCharity->media->type === 'audio';
+            $isVideoLink = $homeCharity->media && $homeCharity->media->type === 'link';
+            $isVideoFile = $homeCharity->media && $homeCharity->media->type === 'video';
+            $isPdf = $homeCharity->media && $homeCharity->media->type === 'pdf';
+            $isImages = $homeCharity->media && $homeCharity->media->type === 'images';
+
 
             $thumbnailUrl = null;
 
             if ($isVideoLink) {
-                $rawUrl = $temoignage->media->url_fichier;
+                $rawUrl = $homeCharity->media->url_fichier;
 
                 if (Str::contains($rawUrl, 'youtube.com/watch?v=')) {
                     $videoId = explode('v=', parse_url($rawUrl, PHP_URL_QUERY))[1] ?? null;
@@ -69,26 +69,26 @@ class TemoignageController extends Controller
                 }
             } elseif ($isVideoFile) {
                 // Pour les vidéos fichiers, utiliser l'image de couverture si disponible
-                if ($temoignage->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $temoignage->media->thumbnail);
+                if ($homeCharity->media->thumbnail) {
+                    $thumbnailUrl = asset('storage/' . $homeCharity->media->thumbnail);
                 } else {
-                    $thumbnailUrl = asset('storage/' . $temoignage->media->url_fichier);
+                    $thumbnailUrl = asset('storage/' . $homeCharity->media->url_fichier);
                 }
             } elseif ($isAudio || $isPdf) {
                 // Pour les audios et PDFs, utiliser l'image de couverture si disponible
-                if ($temoignage->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $temoignage->media->thumbnail);
+                if ($homeCharity->media->thumbnail) {
+                    $thumbnailUrl = asset('storage/' . $homeCharity->media->thumbnail);
                 } else {
                     $thumbnailUrl = null; // Pas d'image, on utilisera l'icône par défaut
                 }
             } elseif ($isImages) {
                 // Pour les images, utiliser la couverture si dispo, sinon la première image de url_fichier (JSON)
-                if ($temoignage->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $temoignage->media->thumbnail);
+                if ($homeCharity->media->thumbnail) {
+                    $thumbnailUrl = asset('storage/' . $homeCharity->media->thumbnail);
                 } else {
                     $imagesArr = [];
-                    if (!empty($temoignage->media->url_fichier)) {
-                        $decoded = json_decode($temoignage->media->url_fichier, true);
+                    if (!empty($homeCharity->media->url_fichier)) {
+                        $decoded = json_decode($homeCharity->media->url_fichier, true);
                         $imagesArr = is_array($decoded) ? $decoded : [];
                     }
                     $first = count($imagesArr) > 0 ? $imagesArr[0] : null;
@@ -96,29 +96,31 @@ class TemoignageController extends Controller
                 }
             }
             return (object)[
-                'id' => $temoignage->id,
-                'nom' => $temoignage->nom,
-                'description' => $temoignage->description,
-                'created_at' => $temoignage->created_at,
+                'id' => $homeCharity->id,
+                'nom' => $homeCharity->nom,
+                'description' => $homeCharity->description,
+                'created_at' => $homeCharity->created_at,
                 'media_type' => $isAudio ? 'audio' : ($isVideoLink ? 'video_link' : ($isVideoFile ? 'video_file' : ($isPdf ? 'pdf' : ($isImages ? 'images' : null)))),
                 'thumbnail_url' => $thumbnailUrl,
-                'video_url' => $isVideoFile ? asset('storage/' . $temoignage->media->url_fichier) : $thumbnailUrl,
-                'media_url' => $temoignage->media && !$isImages ? asset('storage/' . $temoignage->media->url_fichier) : null,
-                'has_thumbnail' => $temoignage->media && $temoignage->media->thumbnail ? true : ($isImages && !empty(json_decode($temoignage->media->url_fichier ?? '[]', true))),
-                'is_published' => $temoignage->media->is_published ?? true,
-                'images' => $isImages ? array_map(function ($p) { return asset('storage/' . $p); }, (array)(json_decode($temoignage->media->url_fichier ?? '[]', true) ?: [])) : [],
+                'video_url' => $isVideoFile ? asset('storage/' . $homeCharity->media->url_fichier) : $thumbnailUrl,
+                'media_url' => $homeCharity->media && !$isImages ? asset('storage/' . $homeCharity->media->url_fichier) : null,
+                'has_thumbnail' => $homeCharity->media && $homeCharity->media->thumbnail ? true : ($isImages && !empty(json_decode($homeCharity->media->url_fichier ?? '[]', true))),
+                'is_published' => $homeCharity->media->is_published ?? true,
+                'images' => $isImages ? array_map(function ($p) {
+                    return asset('storage/' . $p);
+                }, (array)(json_decode($homeCharity->media->url_fichier ?? '[]', true) ?: [])) : [],
             ];
         });
-        // Envoyer chaque témoignage comme variable séparée
-        return view('admin.medias.temoignages.index', [
-            'temoignages' => $temoignages,
-            'temoignagesData' => $temoignagesData,
+        // Envoyer chaque charité comme variable séparée
+        return view('admin.medias.home-charities.index', [
+            'homeCharities' => $homeCharities,
+            'homeCharitiesData' => $homeCharitiesData,
         ]);
     }
 
     public function store(Request $request)
     {
-        Log::info('TemoignageController@store: début', [
+        Log::info('HomeCharityController@store: début', [
             'media_type' => $request->input('media_type'),
             'nom' => $request->input('nom'),
         ]);
@@ -184,7 +186,7 @@ class TemoignageController extends Controller
                 // Stockage direct du PDF
                 $filePath = $file->storeAs('pdfs', $uniqueName, 'public');
             } elseif ($request->media_type === 'images') {
-                Log::info('TemoignageController@store: type images détecté');
+                Log::info('HomeCharityController@store: type images détecté');
                 $request->validate([
                     'images' => 'required|array|min:1',
                     'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
@@ -194,12 +196,12 @@ class TemoignageController extends Controller
                 // Stocker images multiples
                 $storedImages = [];
                 if ($request->hasFile('images')) {
-                    Log::info('TemoignageController@store: nombre de fichiers images', [
+                    Log::info('HomeCharityController@store: nombre de fichiers images', [
                         'count' => is_countable($request->file('images')) ? count($request->file('images')) : null
                     ]);
                     foreach ($request->file('images') as $imgFile) {
                         if ($imgFile && $imgFile->isValid()) {
-                            Log::info('TemoignageController@store: fichier image valide', [
+                            Log::info('HomeCharityController@store: fichier image valide', [
                                 'original_name' => $imgFile->getClientOriginalName(),
                                 'size' => $imgFile->getSize(),
                                 'mime' => $imgFile->getMimeType(),
@@ -207,13 +209,13 @@ class TemoignageController extends Controller
                             $base = pathinfo($imgFile->getClientOriginalName(), PATHINFO_FILENAME);
                             $ext = $imgFile->getClientOriginalExtension();
                             $unique = Str::slug($base, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $ext;
-                            $path = $imgFile->storeAs('images/temoignages', $unique, 'public');
+                            $path = $imgFile->storeAs('images/home-charities', $unique, 'public');
                             $storedImages[] = $path;
-                            Log::info('TemoignageController@store: image stockée', ['path' => $path]);
+                            Log::info('HomeCharityController@store: image stockée', ['path' => $path]);
                         }
                     }
                 }
-                
+
                 // Debug: vérifier si des images ont été stockées
                 if (empty($storedImages)) {
                     throw new \Exception('Aucune image valide n\'a été trouvée dans la requête');
@@ -230,7 +232,7 @@ class TemoignageController extends Controller
                         $thumbName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
                         $thumbUniqueName = 'thumb_' . Str::slug($thumbName, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $thumbnailFile->getClientOriginalExtension();
                         $thumbnailPath = $thumbnailFile->storeAs('thumbnails/images', $thumbUniqueName, 'public');
-                        Log::info('TemoignageController@store: image de couverture stockée', ['thumbnail' => $thumbnailPath]);
+                        Log::info('HomeCharityController@store: image de couverture stockée', ['thumbnail' => $thumbnailPath]);
                     }
                 }
             }
@@ -278,50 +280,50 @@ class TemoignageController extends Controller
             // Ajouter les images pour le type image
             // Si images, on n'utilise plus la colonne images, tout est dans url_fichier JSON
 
-            Log::info('TemoignageController@store: création du média', [
+            Log::info('HomeCharityController@store: création du média', [
                 'type' => $type,
                 'has_thumbnail' => (bool) $thumbnailPath,
                 'images_count' => $type === 'images' ? (is_countable($storedImages ?? null) ? count($storedImages) : null) : null,
             ]);
             $media = Media::create($mediaData);
-            Log::info('TemoignageController@store: média créé', ['media_id' => $media->id]);
+            Log::info('HomeCharityController@store: média créé', ['media_id' => $media->id]);
 
-            // Créer le témoignage
-            $temoignage = Temoignage::create([
+            // Créer la charité
+            $homeCharity = HomeCharity::create([
                 'id_media' => $media->id,
                 'nom' => $request->nom,
                 'description' => $request->description,
                 'insert_by' => auth()->id(),
                 'update_by' => auth()->id(),
             ]);
-            Log::info('TemoignageController@store: témoignage créé', ['temoignage_id' => $temoignage->id]);
+            Log::info('HomeCharityController@store: charité créée', ['home_charity_id' => $homeCharity->id]);
 
-            notify()->success('Succès', 'Témoignage ajouté avec succès.');
-            return redirect()->route('temoignages.index');
+            notify()->success('Succès', 'Charité ajoutée avec succès.');
+            return redirect()->route('home-charities.index');
         } catch (\Exception $e) {
-            Log::error('TemoignageController@store: erreur', [
+            Log::error('HomeCharityController@store: erreur', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            Alert::error('Erreur', 'Impossible de créer le témoignage: ' . $e->getMessage());
+            Alert::error('Erreur', 'Impossible de créer la charité: ' . $e->getMessage());
             return back()->withInput();
         }
     }
 
 
-    public function edit(Temoignage $temoignage)
+    public function edit(HomeCharity $homeCharity)
     {
-        $temoignage->load('media');
+        $homeCharity->load('media');
         return response()->json([
-            'nom' => $temoignage->nom,
-            'description' => $temoignage->description,
-            'media' => $temoignage->media
+            'nom' => $homeCharity->nom,
+            'description' => $homeCharity->description,
+            'media' => $homeCharity->media
         ]);
     }
 
     public function update(Request $request, $id)
     {
-        Log::info('TemoignageController@update: début', [
+        Log::info('HomeCharityController@update: début', [
             'id' => $id,
             'media_type' => $request->input('media_type'),
         ]);
@@ -335,12 +337,12 @@ class TemoignageController extends Controller
         try {
             DB::beginTransaction();
 
-            // Récupérer le témoignage existant
-            $temoignage = Temoignage::findOrFail($id);
-            $media = $temoignage->media;
+            // Récupérer la charité existante
+            $homeCharity = HomeCharity::findOrFail($id);
+            $media = $homeCharity->media;
 
             if (!$media) {
-                throw new \Exception('Média introuvable pour ce témoignage');
+                throw new \Exception('Média introuvable pour cette charité');
             }
 
             $filePath = $media->url_fichier; // par défaut, garder l'ancien fichier
@@ -464,7 +466,7 @@ class TemoignageController extends Controller
                     $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
                 }
             } elseif ($request->media_type === 'images') {
-                Log::info('TemoignageController@update: type images détecté');
+                Log::info('HomeCharityController@update: type images détecté');
                 $request->validate([
                     'images' => 'nullable',
                     'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
@@ -497,12 +499,12 @@ class TemoignageController extends Controller
                 $newImages = [];
 
                 if ($request->hasFile('images')) {
-                    Log::info('TemoignageController@update: nombre de nouveaux fichiers images', [
+                    Log::info('HomeCharityController@update: nombre de nouveaux fichiers images', [
                         'count' => is_countable($request->file('images')) ? count($request->file('images')) : null
                     ]);
                     foreach ($request->file('images') as $imgFile) {
                         if ($imgFile && $imgFile->isValid()) {
-                            Log::info('TemoignageController@update: nouveau fichier image valide', [
+                            Log::info('HomeCharityController@update: nouveau fichier image valide', [
                                 'original_name' => $imgFile->getClientOriginalName(),
                                 'size' => $imgFile->getSize(),
                                 'mime' => $imgFile->getMimeType(),
@@ -510,26 +512,26 @@ class TemoignageController extends Controller
                             $base = pathinfo($imgFile->getClientOriginalName(), PATHINFO_FILENAME);
                             $ext = $imgFile->getClientOriginalExtension();
                             $unique = Str::slug($base, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $ext;
-                            $path = $imgFile->storeAs('images/temoignages', $unique, 'public');
+                            $path = $imgFile->storeAs('images/home-charities', $unique, 'public');
                             $newImages[] = $path;
-                            Log::info('TemoignageController@update: image stockée', ['path' => $path]);
+                            Log::info('HomeCharityController@update: image stockée', ['path' => $path]);
                         }
                     }
                 }
 
                 // Gestion de la couverture
                 if ($request->hasFile('image_couverture_images')) {
-                    Log::info('TemoignageController@update: mise à jour image de couverture');
+                    Log::info('HomeCharityController@update: mise à jour image de couverture');
                     if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
                         Storage::disk('public')->delete($media->thumbnail);
-                        Log::info('TemoignageController@update: ancienne couverture supprimée', ['thumbnail' => $media->thumbnail]);
+                        Log::info('HomeCharityController@update: ancienne couverture supprimée', ['thumbnail' => $media->thumbnail]);
                     }
                     $thumbnailFile = $request->file('image_couverture_images');
                     if ($thumbnailFile->isValid()) {
                         $thumbName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
                         $thumbUniqueName = 'thumb_' . Str::slug($thumbName, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $thumbnailFile->getClientOriginalExtension();
                         $thumbnailPath = $thumbnailFile->storeAs('thumbnails/images', $thumbUniqueName, 'public');
-                        Log::info('TemoignageController@update: nouvelle couverture stockée', ['thumbnail' => $thumbnailPath]);
+                        Log::info('HomeCharityController@update: nouvelle couverture stockée', ['thumbnail' => $thumbnailPath]);
                     }
                 }
 
@@ -546,34 +548,34 @@ class TemoignageController extends Controller
             ];
 
             // Ajouter les images pour le type image
-            
+
 
             $media->update($updateData);
-            Log::info('TemoignageController@update: média mis à jour', [
+            Log::info('HomeCharityController@update: média mis à jour', [
                 'media_id' => $media->id,
                 'type' => $media->type,
                 'has_thumbnail' => (bool) $media->thumbnail,
                 'images_count' => is_countable($media->images ?? null) ? count($media->images) : null,
             ]);
 
-            // Mise à jour du témoignage
-            $temoignage->update([
+            // Mise à jour de la charité
+            $homeCharity->update([
                 'nom' => $request->nom,
                 'description' => $request->description,
                 'update_by' => auth()->id(),
             ]);
-            Log::info('TemoignageController@update: témoignage mis à jour', ['temoignage_id' => $temoignage->id]);
+            Log::info('HomeCharityController@update: charité mise à jour', ['home_charity_id' => $homeCharity->id]);
 
             DB::commit();
-            notify()->success('Succès', 'Témoignage mis à jour avec succès.');
-            return redirect()->route('temoignages.index');
+            notify()->success('Succès', 'Charité mise à jour avec succès.');
+            return redirect()->route('home-charities.index');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('TemoignageController@update: erreur', [
+            Log::error('HomeCharityController@update: erreur', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            Alert::error('Erreur', 'Impossible de mettre à jour le témoignage: ' . $e->getMessage());
+            Alert::error('Erreur', 'Impossible de mettre à jour la charité: ' . $e->getMessage());
             return back()->withInput();
         }
     }
@@ -582,26 +584,26 @@ class TemoignageController extends Controller
 
     public function destroy($id)
     {
-        $temoignage = Temoignage::findOrFail($id);
+        $homeCharity = HomeCharity::findOrFail($id);
         try {
             DB::beginTransaction();
 
-            $temoignage->update([
+            $homeCharity->update([
                 'is_deleted' => true,
                 'update_by' => auth()->id(),
             ]);
 
             // Marquer également le média comme supprimé
-            if ($temoignage->media) {
-                $temoignage->media->update([
+            if ($homeCharity->media) {
+                $homeCharity->media->update([
                     'is_deleted' => true,
                     'update_by' => auth()->id(),
                 ]);
             }
 
             DB::commit();
-            notify()->success('Succès', 'Témoignage supprimé avec succès.');
-            return redirect()->route('temoignages.index');
+            notify()->success('Succès', 'Charité supprimée avec succès.');
+            return redirect()->route('home-charities.index');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()
@@ -611,28 +613,28 @@ class TemoignageController extends Controller
 
     public function publish(Request $request, $id)
     {
-        $temoignage = Temoignage::findOrFail($id);
+        $homeCharity = HomeCharity::findOrFail($id);
 
         // Vérifier que c'est une vidéo
-        if (!$temoignage->media || !in_array($temoignage->media->type, ['video', 'link'])) {
+        if (!$homeCharity->media || !in_array($homeCharity->media->type, ['video', 'link'])) {
             Alert::error('Erreur', 'Seules les vidéos peuvent être publiées/dépubliées.');
             return redirect()->back();
         }
 
         try {
-            $temoignage->media->update([
+            $homeCharity->media->update([
                 'is_published' => true,
                 'update_by' => auth()->id(),
             ]);
 
-            notify()->success('Succès', 'Témoignage vidéo publié avec succès.');
+            notify()->success('Succès', 'Charité vidéo publiée avec succès.');
             if ($request->ajax()) {
                 return response()->json(['success' => true]);
             }
             return redirect()->back();
         } catch (\Exception $e) {
             Log::error('Erreur lors de la publication: ' . $e->getMessage());
-            Alert::error('Erreur', 'Impossible de publier le témoignage.');
+            Alert::error('Erreur', 'Impossible de publier la charité.');
             if ($request->ajax()) {
                 return response()->json(['success' => false], 500);
             }
@@ -642,28 +644,28 @@ class TemoignageController extends Controller
 
     public function unpublish(Request $request, $id)
     {
-        $temoignage = Temoignage::findOrFail($id);
+        $homeCharity = HomeCharity::findOrFail($id);
 
         // Vérifier que c'est une vidéo
-        if (!$temoignage->media || !in_array($temoignage->media->type, ['video', 'link'])) {
+        if (!$homeCharity->media || !in_array($homeCharity->media->type, ['video', 'link'])) {
             Alert::error('Erreur', 'Seules les vidéos peuvent être publiées/dépubliées.');
             return redirect()->back();
         }
 
         try {
-            $temoignage->media->update([
+            $homeCharity->media->update([
                 'is_published' => false,
                 'update_by' => auth()->id(),
             ]);
 
-            notify()->success('Succès', 'Témoignage vidéo dépublié avec succès.');
+            notify()->success('Succès', 'Charité vidéo dépubliée avec succès.');
             if ($request->ajax()) {
                 return response()->json(['success' => true]);
             }
             return redirect()->back();
         } catch (\Exception $e) {
             Log::error('Erreur lors de la dépublication: ' . $e->getMessage());
-            Alert::error('Erreur', 'Impossible de dépublier le témoignage.');
+            Alert::error('Erreur', 'Impossible de dépublier la charité.');
             if ($request->ajax()) {
                 return response()->json(['success' => false], 500);
             }

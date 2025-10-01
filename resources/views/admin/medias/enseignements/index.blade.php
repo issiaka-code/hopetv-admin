@@ -677,9 +677,9 @@
             // ===== GESTION DU FORMULAIRE D'ÉDITION =====
             $('input[name="media_type"]', '#editEnseignementForm').change(function() {
                 const selectedType = $(this).val();
-                $('#editAudioFileSection, #editVideoFileSection, #editVideoLinkSection, #editPdfFileSection')
+                $('#editAudioFileSection, #editVideoFileSection, #editVideoLinkSection, #editPdfFileSection, #editImageFileSection')
                     .addClass('d-none');
-                $('#editAudioFile, #editVideoFile, #editVideoLink, #editPdfFile').removeAttr('required');
+                $('#editAudioFile, #editVideoFile, #editVideoLink, #editPdfFile, #editImageFiles, #editImageCoverFile').removeAttr('required');
 
                 if (selectedType === 'audio') {
                     $('#editAudioFileSection').removeClass('d-none');
@@ -690,10 +690,13 @@
                     $('#editVideoLink').attr('required', 'required');
                 } else if (selectedType === 'pdf') {
                     $('#editPdfFileSection').removeClass('d-none');
+                } else if (selectedType === 'images') {
+                    $('#editImageFileSection').removeClass('d-none');
+                    $('#editImageFiles, #editImageCoverFile').attr('required', 'required');
                 }
             });
 
-            $('#editAudioFile, #editVideoFile, #editPdfFile, #editAudioImageFile, #editVideoImageFile, #editPdfImageFile')
+            $('#editAudioFile, #editVideoFile, #editPdfFile, #editAudioImageFile, #editVideoImageFile, #editPdfImageFile, #editImageFiles, #editImageCoverFile')
                 .on('change', function() {
                     let fileName = $(this).val().split('\\').pop();
                     $(this).next('.custom-file-label').addClass("selected").html(fileName ||
@@ -758,6 +761,26 @@
                                 $('#editCurrentPdf').show();
                                 $('#editCurrentAudio, #editCurrentVideo, #editCurrentLink')
                                     .hide();
+                            } else if (mediaType === 'images') {
+                                $('#editMediaTypeImages').prop('checked', true).trigger('change');
+                                const container = $('#existingImagesContainerEns');
+                                container.empty();
+                                let imgs = [];
+                                try { imgs = JSON.parse(data.media.url_fichier || '[]') || []; } catch (e) { imgs = []; }
+                                imgs.forEach(function(path) {
+                                    const url = '/storage/' + path;
+                                    const id = 'delEns_' + btoa(path).replace(/[^a-zA-Z0-9]/g,'');
+                                    const col = $('<div class="col-6 col-md-4 col-lg-3 mb-2"></div>');
+                                    const card = $('<div class="border rounded p-2 h-100"></div>');
+                                    card.append('<img src="'+url+'" class="img-fluid mb-2" style="height:120px;object-fit:cover;width:100%" />');
+                                    const chk = $('<div class="custom-control custom-checkbox">\
+                                        <input type="checkbox" class="custom-control-input" id="'+id+'" name="existing_images_delete[]" value="'+path+'">\
+                                        <label class="custom-control-label" for="'+id+'">Supprimer</label>\
+                                    </div>');
+                                    card.append(chk);
+                                    col.append(card);
+                                    container.append(col);
+                                });
                             }
                         }
                         $('#editEnseignementModal').modal('show');

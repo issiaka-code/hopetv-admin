@@ -143,7 +143,8 @@
                                 <div class="card etab-card">
                                     <div class="etab-thumbnail-container">
                                         @if ($etab->image_path)
-                                            <img src="{{ asset('storage/' . $etab->image_path) }}" alt="{{ $etab->nom }}">
+                                            <img src="{{ asset('storage/' . $etab->image_path) }}"
+                                                alt="{{ $etab->nom }}">
                                         @else
                                             <div class="w-100 h-100 d-flex align-items-center justify-content-center"
                                                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
@@ -165,8 +166,15 @@
                                             @if ($etab->email)
                                                 <div><i class="fas fa-envelope"></i> {{ $etab->email }}</div>
                                             @endif
-                                            @if ($etab->localisation)
-                                                <div><i class="fas fa-map-marker-alt"></i> {{ $etab->localisation }}</div>
+                                            @if ($etab->adresse)
+                                                <div><i class="fas fa-map-marker-alt"></i> {{ Str::limit($etab->adresse, 50) }}</div>
+                                                @if ($etab->google_maps_url)
+                                                    <div class="small">
+                                                        <a href="{{ $etab->google_maps_url }}" target="_blank" class="text-primary">
+                                                            <i class="fas fa-external-link-alt"></i> Voir sur Google Maps
+                                                        </a>
+                                                    </div>
+                                                @endif
                                             @endif
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center mt-2">
@@ -176,7 +184,7 @@
                                                     data-nom="{{ $etab->nom }}" data-type="{{ $etab->type }}"
                                                     data-telephone="{{ $etab->telephone }}"
                                                     data-email="{{ $etab->email }}"
-                                                    data-localisation="{{ $etab->localisation }}">
+                                                    data-adresse="{{ $etab->adresse }}">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                                 <button class="btn btn-sm btn-outline-primary edit-etab-btn mx-1 rounded"
@@ -244,8 +252,7 @@
             // File input labels
             $('#addImage, #editImage').on('change', function() {
                 const fileName = $(this).val().split('\\').pop();
-                $(this).next('.custom-file-label').addClass('selected').html(fileName ||
-                    'Choisir une image');
+                $(this).next('.custom-file-label').addClass('selected').html(fileName || 'Choisir une image');
             });
 
             // Toggle status
@@ -267,12 +274,11 @@
             $(document).on('click', '.edit-etab-btn', function() {
                 const id = $(this).data('etab-id');
                 $.get("{{ route('etablissements.edit', ':id') }}".replace(':id', id), function(data) {
-                    $('#editEtabForm').attr('action', "{{ route('etablissements.update', ':id') }}"
-                        .replace(':id', id));
+                    $('#editEtabForm').attr('action', "{{ route('etablissements.update', ':id') }}".replace(':id', id));
                     $('#editNom').val(data.nom);
                     $('#editTelephone').val(data.telephone);
                     $('#editEmail').val(data.email);
-                    $('#editLocalisation').val(data.localisation);
+                    $('#editAdresse').val(data.adresse);
                     if (data.type === 'siege') {
                         $('#editTypeSiege').prop('checked', true);
                     } else {
@@ -281,8 +287,7 @@
                     $('#editIsActive').prop('checked', !!data.is_active);
                     if (data.image_path) {
                         $('#editCurrentImageName').text(data.image_path.split('/').pop());
-                        $('#editCurrentImagePreview').attr('src', '/storage/' + data.image_path)
-                            .show();
+                        $('#editCurrentImagePreview').attr('src', '/storage/' + data.image_path).show();
                         $('#editCurrentImage').show();
                     } else {
                         $('#editCurrentImage').hide();
@@ -300,7 +305,8 @@
                 const type = $(this).data('type');
                 const tel = $(this).data('telephone') || '-';
                 const email = $(this).data('email') || '-';
-                const loc = $(this).data('localisation') || '-';
+                const adresse = $(this).data('adresse') || '-';
+                
                 if (image) {
                     $('#viewEtabImage').attr('src', image).show();
                 } else {
@@ -310,7 +316,7 @@
                 $('#viewEtabType').text(type === 'siege' ? 'Siège' : 'Annexe');
                 $('#viewEtabTel').text(tel);
                 $('#viewEtabEmail').text(email);
-                $('#viewEtabLoc').text(loc);
+                $('#viewEtabAdresse').text(adresse);
                 $('#viewEtabModal').modal('show');
             });
         });

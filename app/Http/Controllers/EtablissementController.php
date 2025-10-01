@@ -21,7 +21,7 @@ class EtablissementController extends Controller
                 $q->where('nom', 'like', "%$s%")
                   ->orWhere('telephone', 'like', "%$s%")
                   ->orWhere('email', 'like', "%$s%")
-                  ->orWhere('localisation', 'like', "%$s%");
+                  ->orWhere('adresse', 'like', "%$s%");
             });
         }
 
@@ -47,7 +47,7 @@ class EtablissementController extends Controller
             'nom' => 'required|string|max:255',
             'telephone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
-            'localisation' => 'nullable|string|max:255',
+            'adresse' => 'nullable|string|max:500',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'is_active' => 'nullable|boolean',
         ]);
@@ -68,7 +68,7 @@ class EtablissementController extends Controller
                 'nom' => $request->nom,
                 'telephone' => $request->telephone,
                 'email' => $request->email,
-                'localisation' => $request->localisation,
+                'adresse' => $request->adresse,
                 'image_path' => $imagePath,
                 'is_active' => $request->boolean('is_active', true),
                 'insert_by' => auth()->id(),
@@ -98,7 +98,7 @@ class EtablissementController extends Controller
             'nom' => 'required|string|max:255',
             'telephone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
-            'localisation' => 'nullable|string|max:255',
+            'adresse' => 'nullable|string|max:500',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'is_active' => 'nullable|boolean',
         ]);
@@ -124,7 +124,7 @@ class EtablissementController extends Controller
                 'nom' => $request->nom,
                 'telephone' => $request->telephone,
                 'email' => $request->email,
-                'localisation' => $request->localisation,
+                'adresse' => $request->adresse,
                 'image_path' => $imagePath,
                 'is_active' => $request->boolean('is_active', $etab->is_active),
                 'update_by' => auth()->id(),

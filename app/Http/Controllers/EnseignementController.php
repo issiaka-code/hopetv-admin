@@ -373,6 +373,8 @@ class EnseignementController extends Controller
                     'images' => 'nullable',
                     'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
                     'image_couverture_images' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+                    'existing_images_delete' => 'nullable|array',
+                    'existing_images_delete.*' => 'string',
                 ]);
                 $type = 'images';
                 $existingImages = [];
@@ -381,6 +383,18 @@ class EnseignementController extends Controller
                     $existingImages = is_array($decoded) ? $decoded : [];
                 }
                 $newImages = [];
+                // Remove checked ones
+                $toDelete = (array) $request->input('existing_images_delete', []);
+                if (!empty($toDelete)) {
+                    $existingImages = array_values(array_filter($existingImages, function ($path) use ($toDelete) {
+                        return !in_array($path, $toDelete, true);
+                    }));
+                    foreach ($toDelete as $delPath) {
+                        if ($delPath && Storage::disk('public')->exists($delPath)) {
+                            Storage::disk('public')->delete($delPath);
+                        }
+                    }
+                }
                 if ($request->hasFile('images')) {
                     foreach ($request->file('images') as $imgFile) {
                         if ($imgFile && $imgFile->isValid()) {

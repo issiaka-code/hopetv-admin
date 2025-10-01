@@ -10,32 +10,40 @@ class Emission extends Model
     use HasFactory;
 
     protected $fillable = [
-        'id_media',
         'nom',
         'description',
-        'is_published',
         'insert_by',
         'update_by',
         'is_deleted'
     ];
 
     protected $casts = [
-        'is_published' => 'boolean',
         'is_deleted' => 'boolean',
     ];
 
     /**
-     * Relation avec le modèle Media
+     * Relation avec les items d'émission
      */
-    public function media()
+    public function items()
     {
-        return $this->belongsTo(Media::class, 'id_media');
+        return $this->hasMany(EmissionItem::class, 'id_Emission')->where('is_deleted', false);
+    }
+
+    /**
+     * Relation avec les items actifs
+     */
+    public function activeItems()
+    {
+        return $this->hasMany(EmissionItem::class, 'id_Emission')
+                    ->where('is_deleted', false)
+                    ->where('is_active', true)
+                    ->orderBy('position', 'asc');
     }
 
     /**
      * Relation avec le modèle User (créateur)
      */
-    public function user()
+    public function insertedBy()
     {
         return $this->belongsTo(User::class, 'insert_by');
     }
@@ -43,7 +51,7 @@ class Emission extends Model
     /**
      * Relation avec le modèle User (modificateur)
      */
-    public function updater()
+    public function updatedBy()
     {
         return $this->belongsTo(User::class, 'update_by');
     }
@@ -57,34 +65,59 @@ class Emission extends Model
     }
 
     /**
-     * Scope pour les émissions publiées
+     * Scope pour les émissions actives
      */
-    public function scopePublished($query)
-    {
-        return $query->where('is_published', true);
-    }
+    // scopeActive supprimé (pas de colonne etat)
 
     /**
-     * Scope pour les émissions non publiées
+     * Accessor pour le statut
      */
-    public function scopeUnpublished($query)
-    {
-        return $query->where('is_published', false);
-    }
-
-    /**
-     * Accessor pour le statut de publication
-     */
-    public function getStatusAttribute()
-    {
-        return $this->is_published ? 'Publié' : 'Non publié';
-    }
+    // getStatusAttribute supprimé (pas de colonne etat)
 
     /**
      * Accessor pour la classe CSS du statut
      */
-    public function getStatusClassAttribute()
+    // getStatusClassAttribute supprimé (pas de colonne etat)
+
+    /**
+     * Compter le nombre de vidéos dans cette émission
+     */
+    public function getVideosCountAttribute()
     {
-        return $this->is_published ? 'success' : 'warning';
+        return $this->items()->count();
+    }
+
+    /**
+     * Compter le nombre de vidéos actives
+     */
+    public function getActiveVideosCountAttribute()
+    {
+        return $this->items()->where('is_active', true)->count();
+    }
+
+    /**
+     * Calculer la durée totale des vidéos
+     */
+    public function getTotalDurationAttribute()
+    {
+        $totalSeconds = 0;
+        
+        foreach ($this->activeItems as $item) {
+            if ($item->duree_video) {
+                $timeParts = explode(':', $item->duree_video);
+                if (count($timeParts) === 3) {
+                    $hours = (int)$timeParts[0];
+                    $minutes = (int)$timeParts[1];
+                    $seconds = (int)$timeParts[2];
+                    $totalSeconds += ($hours * 3600) + ($minutes * 60) + $seconds;
+                }
+            }
+        }
+        
+        $hours = floor($totalSeconds / 3600);
+        $minutes = floor(($totalSeconds % 3600) / 60);
+        $seconds = $totalSeconds % 60;
+        
+        return sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
     }
 }

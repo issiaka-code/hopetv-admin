@@ -332,21 +332,19 @@
                 <form method="GET" action="{{ route('emissions.index') }}" class="w-100">
                     <div class="row g-2 d-flex flex-row justify-content-end align-items-center">
                         <!-- Champ recherche -->
-                        <div class="col-3">
+                        <div class="col-4">
                             <input type="text" name="search" value="{{ request('search') }}" class="form-control"
                                 placeholder="Rechercher une émission...">
                         </div>
 
-                        <!-- Filtre par type -->
+                        <!-- Filtre par statut -->
                         <div class="col-2">
-                            <select name="type" class="form-control">
-                                <option value="">Tous</option>
-                                <option value="audio" {{ request('type') === 'audio' ? 'selected' : '' }}>Audio</option>
-                                <option value="video" {{ request('type') === 'video' ? 'selected' : '' }}>Fichiers
-                                    vidéo</option>
-                                <option value="link" {{ request('type') === 'link' ? 'selected' : '' }}>Liens
-                                    vidéo</option>
-                                <option value="pdf" {{ request('type') === 'pdf' ? 'selected' : '' }}>PDF</option>
+                            <select name="status" class="form-control">
+                                <option value="">Tous les statuts</option>
+                                <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Actives
+                                </option>
+                                <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactives
+                                </option>
                             </select>
                         </div>
 
@@ -369,117 +367,66 @@
             <div class="row">
                 <div class="col-12">
                     <div id="emissions-grid">
-                        @forelse($emissionsData as $emission)
-                            @php
-                                $id = $emission->id;
-                                $nom = $emission->nom;
-                                $description = $emission->description;
-                                $created_at = $emission->created_at;
-                                $media_type = $emission->media_type;
-                                $media_url = $emission->media_url;
-                                $video_url = $emission->video_url;
-                                $thumbnail_url = $emission->thumbnail_url;
-                                $is_published = $emission->is_published;
-                            @endphp
-
+                        @forelse($emissions as $emission)
                             <div class="emission-grid-item">
                                 <div class="card emission-card">
                                     <div class="emission-thumbnail-container">
                                         <div class="emission-thumbnail position-relative"
-                                            data-emission-url="{{ $media_type === 'video_link' ? $video_url : $media_url }}"
-                                            data-video-url="{{ $media_type === 'video_file' ? $video_url : '' }}"
-                                            data-emission-name="{{ $nom }}" data-media-type="{{ $media_type }}"
-                                            data-has-thumbnail="{{ $emission->has_thumbnail ? 'true' : 'false' }}">
+                                            data-emission-id="{{ $emission->id }}"
+                                            data-emission-name="{{ $emission->nom }}">
 
-                                            @if ($emission->has_thumbnail)
-                                                <img src="{{ $thumbnail_url }}" alt="{{ $nom }}"
-                                                    style="width: 100%; height: 100%; object-fit: cover;">
-                                            @else
-                                                <div class="default-thumbnail d-flex align-items-center justify-content-center"
-                                                     style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                                    @if ($media_type === 'audio')
-                                                        <i class="fas fa-music text-white" style="font-size: 3rem;"></i>
-                                                    @elseif($media_type === 'video_link')
-                                                        <iframe src="{{ $video_url }}" width="100%" height="100%" frameborder="0"></iframe>
-                                                    @elseif($media_type === 'video_file')
-                                                        <i class="fas fa-video text-white" style="font-size: 3rem;"></i>
-                                                    @elseif($media_type === 'pdf')
-                                                        <i class="fas fa-file-pdf text-white" style="font-size: 3rem;"></i>
-                                                    @endif
-                                                </div>
-                                            @endif
-
-                                            <div class="thumbnail-overlay">
-                                                <i class="fas fa-play-circle"></i>
+                                            <div class="default-thumbnail d-flex align-items-center justify-content-center"
+                                                style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                                <i class="fas fa-broadcast-tower text-white" style="font-size: 3rem;"></i>
                                             </div>
 
-                                            <span class="badge badge-primary media-type-badge">
-                                                {{ ucfirst(
-                                                    $media_type === 'audio'
-                                                        ? 'Audio'
-                                                        : ($media_type === 'pdf'
-                                                            ? 'PDF'
-                                                            : ($media_type === 'video_link'
-                                                                ? 'Lien vidéo'
-                                                                : ($media_type === 'video_file'
-                                                                    ? 'Fichier vidéo'
-                                                                    : $media_type))),
-                                                ) }}
-                                            </span>
-
-                                            <!-- Badge statut publication (uniquement pour les vidéos) -->
-                                            @if(in_array($media_type, ['video_link', 'video_file']))
-                                                <span class="badge {{ ($emission->is_published ?? false) ? 'badge-success' : 'badge-secondary' }}" 
-                                                      style="position: absolute; top: 10px; left: 10px; z-index: 10;">
-                                                    {{ ($emission->is_published ?? false) ? 'Publié' : 'Non publié' }}
-                                                </span>
-                                            @endif
+                                            <div class="thumbnail-overlay">
+                                                <i class="fas fa-eye"></i>
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div class="card-body">
-                                        <h5 class="card-title" title="{{ $nom }}">{{ Str::limit($nom, 25) }}</h5>
-                                        <p class="card-text text-muted small" title="{{ $description }}">
-                                            {{ Str::limit($description, 30) }}</p>
+                                        <h5 class="card-title" title="{{ $emission->nom }}">
+                                            {{ Str::limit($emission->nom, 25) }}</h5>
+                                        <p class="card-text text-muted small" title="{{ $emission->description }}">
+                                            {{ Str::limit($emission->description, 30) }}</p>
+
+                                        <!-- Statistiques -->
+                                        <div class="mb-2">
+                                            <small class="text-muted">
+                                                <i class="fas fa-video"></i> {{ $emission->videos_count }} vidéos
+                                                @if ($emission->videos_count > 0)
+                                                    | <i class="fas fa-clock"></i> {{ $emission->total_duration }}
+                                                @endif
+                                            </small>
+                                        </div>
 
                                         <div class="d-flex justify-content-between align-items-center flex-wrap">
-                                            <small class="text-muted mb-1">{{ $created_at->format('d/m/Y') }}</small>
+                                            <small
+                                                class="text-muted mb-1">{{ $emission->created_at->format('d/m/Y') }}</small>
 
                                             <div class="btn-group">
-                                                <button class="btn btn-sm btn-outline-info view-emission-btn rounded"
-                                                    data-emission-url="{{ $media_type === 'video_link' ? $video_url : $media_url }}"
-                                                    data-emission-name="{{ $nom }}"
-                                                    data-title="{{ $nom }}"
-                                                    data-description="{{ $description }}"
-                                                    data-media-type="{{ $media_type }}">
+                                                <a href="{{ route('emissions.show', $emission->id) }}"
+                                                    class="btn btn-sm btn-outline-info rounded" title="Voir les détails">
                                                     <i class="fas fa-eye"></i>
-                                                </button>
+                                                </a>
                                                 <button
                                                     class="btn btn-sm btn-outline-primary edit-emission-btn mx-1 rounded"
-                                                    data-emission-id="{{ $id }}">
+                                                    data-emission-id="{{ $emission->id }}" title="Modifier">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                
-                                                <form action="{{ route('emissions.destroy', $id) }}" method="POST"
-                                                    class="d-inline delete-form">
+
+                                                <form action="{{ route('emissions.destroy', $emission->id) }}"
+                                                    method="POST" class="d-inline delete-form">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-outline-danger rounded"
-                                                        onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette émission ?')">
+                                                        onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette émission ?')"
+                                                        title="Supprimer">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </form>
-                                                <!-- Switch Publication (uniquement pour les vidéos) -->
-                                                @if(in_array($media_type, ['video_link', 'video_file']))
-                                                    <button
-                                                        class="btn btn-sm btn-outline-{{ $is_published ? 'success' : 'secondary' }} toggle-publish-emission-btn mx-1 rounded"
-                                                        title="{{ $is_published ? 'Dépublier' : 'Publier' }} cette émission"
-                                                        data-emission-id="{{ $id }}"
-                                                        data-status="{{ $is_published ? 1 : 0 }}">
-                                                        <i class="fas fa-{{ $is_published ? 'toggle-on' : 'toggle-off' }}"></i>
-                                                        <span class="p-1">{{ $is_published ? 'Publié' : 'Non publié' }}</span>
-                                                    </button>
-                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -509,85 +456,29 @@
     <!-- Modals -->
     @include('admin.medias.emissions.modals.add')
     @include('admin.medias.emissions.modals.edit')
-    @include('admin.medias.emissions.modals.view')
 @endsection
 
 @push('scripts')
     <script>
         $(document).ready(function() {
-            // ===== TOGGLE PUBLICATION (Émissions) =====
-            $(document).on('click', '.toggle-publish-emission-btn', function() {
+            // ===== TOGGLE STATUT (Émissions) =====
+            $(document).on('click', '.toggle-status-emission-btn', function() {
                 const $btn = $(this);
                 const id = $btn.data('emission-id');
-                const isPublished = Number($btn.data('status')) === 1;
-                const url = isPublished
-                    ? "{{ url('emissions') }}/" + id + "/unpublish"
-                    : "{{ url('emissions') }}/" + id + "/publish";
+                const url = "{{ url('emissions') }}/" + id + "/toggle-status";
 
-                $.post(url, { _token: '{{ csrf_token() }}' })
-                    .done(function() { window.location.reload(); })
-                    .fail(function() { alert("Erreur lors du changement de statut de l'émission"); });
-            });
-            // ===== GESTION DU FORMULAIRE D'AJOUT =====
-            $('input[name="media_type"]', '#addEmissionForm').change(function() {
-                const selectedType = $(this).val();
-                $('#addAudioFileSection, #addVideoFileSection, #addVideoLinkSection, #addPdfFileSection')
-                    .addClass('d-none');
-                $('#addAudioFile, #addVideoFile, #addVideoLink, #addPdfFile, #addAudioImageFile, #addVideoImageFile, #addPdfImageFile').removeAttr('required');
-
-                if (selectedType === 'audio') {
-                    $('#addAudioFileSection').removeClass('d-none');
-                    $('#addAudioFile, #addAudioImageFile').attr('required', 'required');
-                } else if (selectedType === 'video') {
-                    $('#addVideoFileSection').removeClass('d-none');
-                    $('#addVideoFile, #addVideoImageFile').attr('required', 'required');
-                } else if (selectedType === 'link') {
-                    $('#addVideoLinkSection').removeClass('d-none');
-                    $('#addVideoLink').attr('required', 'required');
-                } else if (selectedType === 'pdf') {
-                    $('#addPdfFileSection').removeClass('d-none');
-                    $('#addPdfFile, #addPdfImageFile').attr('required', 'required');
-                }
-            });
-
-            $('#addAudioFile, #addVideoFile, #addPdfFile, #addAudioImageFile, #addVideoImageFile, #addPdfImageFile').on('change', function() {
-                let fileName = $(this).val().split('\\').pop();
-                $(this).next('.custom-file-label').addClass("selected").html(fileName);
-            });
-
-            $('#addEmissionModal').on('hidden.bs.modal', function() {
-                $('#addEmissionForm')[0].reset();
-                $('#addAudioFile, #addVideoFile, #addPdfFile').next('.custom-file-label').html(
-                    'Choisir un fichier');
-                $('#addAudioImageFile, #addVideoImageFile, #addPdfImageFile').next('.custom-file-label').html('Choisir une image');
-                $('#addMediaTypeAudio').prop('checked', true).trigger('change');
+                $.post(url, {
+                        _token: '{{ csrf_token() }}'
+                    })
+                    .done(function() {
+                        window.location.reload();
+                    })
+                    .fail(function() {
+                        alert("Erreur lors du changement de statut de l'émission");
+                    });
             });
 
             // ===== GESTION DU FORMULAIRE D'ÉDITION =====
-            $('input[name="media_type"]', '#editEmissionForm').change(function() {
-                const selectedType = $(this).val();
-                $('#editAudioFileSection, #editVideoFileSection, #editVideoLinkSection, #editPdfFileSection')
-                    .addClass('d-none');
-                $('#editAudioFile, #editVideoFile, #editVideoLink, #editPdfFile').removeAttr('required');
-
-                if (selectedType === 'audio') {
-                    $('#editAudioFileSection').removeClass('d-none');
-                } else if (selectedType === 'video') {
-                    $('#editVideoFileSection').removeClass('d-none');
-                } else if (selectedType === 'link') {
-                    $('#editVideoLinkSection').removeClass('d-none');
-                    $('#editVideoLink').attr('required', 'required');
-                } else if (selectedType === 'pdf') {
-                    $('#editPdfFileSection').removeClass('d-none');
-                }
-            });
-
-            $('#editAudioFile, #editVideoFile, #editPdfFile, #editAudioImageFile, #editVideoImageFile, #editPdfImageFile').on('change', function() {
-                let fileName = $(this).val().split('\\').pop();
-                $(this).next('.custom-file-label').addClass("selected").html(fileName ||
-                    'Choisir un nouveau fichier');
-            });
-
             $(document).on('click', '.edit-emission-btn', function() {
                 const emissionId = $(this).data('emission-id');
                 $.ajax({
@@ -596,58 +487,10 @@
                     success: function(data) {
                         $('#editEmissionNom').val(data.nom);
                         $('#editEmissionDescription').val(data.description);
+                        $('#editEmissionEtat').prop('checked', data.etat);
                         $('#editEmissionForm').attr('action',
                             "{{ route('emissions.update', ':id') }}".replace(':id',
                                 emissionId));
-
-                        if (data.media) {
-                            let mediaType = data.media.type;
-                            if (mediaType === 'audio') {
-                                $('#editMediaTypeAudio').prop('checked', true).trigger(
-                                    'change');
-                                $('#editCurrentAudioName').text(data.media.url_fichier.split(
-                                    '/').pop());
-                                $('#editCurrentAudio').show();
-                                $('#editCurrentVideo, #editCurrentLink, #editCurrentPdf')
-                                    .hide();
-                            } else if (mediaType === 'video') {
-                                $('#editMediaTypeVideo').prop('checked', true).trigger(
-                                    'change');
-                                $('#editCurrentVideoName').text(data.media.url_fichier.split(
-                                    '/').pop());
-                                $('#editCurrentVideo').show();
-                                $('#editCurrentAudio, #editCurrentLink, #editCurrentPdf')
-                                    .hide();
-
-                                // Gestion de l'image de couverture
-                                if (data.media.thumbnail) {
-                                    const thumbnailName = data.media.thumbnail.split('/').pop();
-                                    $('#editCurrentThumbnailName').text(thumbnailName);
-                                    $('#editCurrentThumbnailPreview').attr('src', '/storage/' +
-                                        data.media.thumbnail).show();
-                                    $('#editCurrentThumbnail').show();
-                                } else {
-                                    $('#editCurrentThumbnail').hide();
-                                }
-                            } else if (mediaType === 'link') {
-                                $('#editMediaTypeLink').prop('checked', true).trigger(
-                                    'change');
-                                $('#editVideoLink').val(data.media.url_fichier);
-                                $('#editCurrentLinkValue').text(data.media.url_fichier);
-                                $('#editViewCurrentLink').attr('href', data.media.url_fichier);
-                                $('#editCurrentLink').show();
-                                $('#editCurrentAudio, #editCurrentVideo, #editCurrentPdf')
-                                    .hide();
-                            } else if (mediaType === 'pdf') {
-                                $('#editMediaTypePdf').prop('checked', true).trigger(
-                                    'change');
-                                $('#editCurrentPdfName').text(data.media.url_fichier.split(
-                                    '/').pop());
-                                $('#editCurrentPdf').show();
-                                $('#editCurrentAudio, #editCurrentVideo, #editCurrentLink')
-                                    .hide();
-                            }
-                        }
                         $('#editEmissionModal').modal('show');
                     },
                     error: function() {
@@ -657,99 +500,9 @@
             });
 
             // ===== VISUALISATION DES ÉMISSIONS =====
-            $(document).on('click', '.view-emission-btn, .emission-thumbnail', function() {
-                const emissionUrl = $(this).data('emission-url');
-                const videoUrl = $(this).data('video-url') || '';
-                const emissionName = $(this).data('emission-name');
-                const mediaType = $(this).data('media-type');
-                const emissionDescription = $(this).closest('.emission-card').find('.card-text').attr(
-                    'title') || '';
-
-                // Masquer tous les lecteurs et réinitialiser
-                $('#audioPlayerContainer, #videoPlayerContainer, #iframePlayerContainer, #pdfViewerContainer').addClass('d-none');
-                $('#modalAudioPlayer').attr('src', '');
-                $('#modalVideoPlayer').attr('src', '');
-                $('#modalIframePlayer').attr('src', '');
-                $('#modalPdfViewer').attr('src', '');
-
-                // Garde-fous: ne pas tenter de charger si l'URL manque
-                const ensureUrl = (url) => typeof url === 'string' && url.trim().length > 0;
-
-                if (mediaType === 'audio') {
-                    if (!ensureUrl(emissionUrl)) {
-                        alert('URL audio introuvable pour cette émission.');
-                        return;
-                    }
-                    $('#modalAudioPlayer').attr('src', emissionUrl);
-                    $('#audioPlayerContainer').removeClass('d-none');
-                    $('#mediaTypeBadge').text('Audio').removeClass('d-none');
-                } else if (mediaType === 'video_link') {
-                    if (!ensureUrl(emissionUrl)) {
-                        alert('URL de la vidéo en ligne introuvable pour cette émission.');
-                        return;
-                    }
-                    $('#modalIframePlayer').attr('src', emissionUrl);
-                    $('#iframePlayerContainer').removeClass('d-none');
-                    $('#mediaTypeBadge').text('Vidéo en ligne').removeClass('d-none');
-                } else if (mediaType === 'video_file') {
-                    const playUrl = ensureUrl(videoUrl) ? videoUrl : emissionUrl;
-                    if (!ensureUrl(playUrl)) {
-                        alert('URL de la vidéo locale introuvable pour cette émission.');
-                        return;
-                    }
-                    $('#modalVideoPlayer').attr('src', playUrl);
-                    $('#videoPlayerContainer').removeClass('d-none');
-                    $('#mediaTypeBadge').text('Vidéo locale').removeClass('d-none');
-                } else if (mediaType === 'pdf') {
-                    if (!ensureUrl(emissionUrl)) {
-                        alert('URL du PDF introuvable pour cette émission.');
-                        return;
-                    }
-                    $('#modalPdfViewer').attr('src', emissionUrl);
-                    $('#pdfViewerContainer').removeClass('d-none');
-                    $('#mediaTypeBadge').text('PDF').removeClass('d-none');
-                }
-
-                $('#emissionTitle').text(emissionName);
-                $('#emissionDescription').text(emissionDescription);
-                $('#emissionViewModal').modal('show');
-            });
-
-            // ===== NETTOYAGE DU MODAL =====
-            $('#emissionViewModal').on('hidden.bs.modal', function() {
-                // Arrêter tous les médias
-                $('#modalAudioPlayer').get(0).pause();
-                $('#modalVideoPlayer').get(0).pause();
-
-                // Réinitialiser les sources
-                $('#modalAudioPlayer').attr('src', '');
-                $('#modalVideoPlayer').attr('src', '');
-                $('#modalIframePlayer').attr('src', '');
-                $('#modalPdfViewer').attr('src', '');
-
-                // Masquer tous les lecteurs
-                $('#audioPlayerContainer, #videoPlayerContainer, #iframePlayerContainer, #pdfViewerContainer')
-                    .addClass(
-                        'd-none');
-
-                // Vider les informations
-                $('#emissionTitle, #emissionDescription, #mediaTypeBadge').text('');
-            });
-
-            // ===== LECTURE AUTOMATIQUE =====
-            $('#emissionViewModal').on('shown.bs.modal', function() {
-                const audioPlayer = $('#modalAudioPlayer').get(0);
-                const videoPlayer = $('#modalVideoPlayer').get(0);
-
-                if (audioPlayer && !$('#audioPlayerContainer').hasClass('d-none')) {
-                    audioPlayer.play().catch(function(error) {
-                        console.log('Lecture audio automatique bloquée:', error);
-                    });
-                } else if (videoPlayer && !$('#videoPlayerContainer').hasClass('d-none')) {
-                    videoPlayer.play().catch(function(error) {
-                        console.log('Lecture vidéo automatique bloquée:', error);
-                    });
-                }
+            $(document).on('click', '.emission-thumbnail', function() {
+                const emissionId = $(this).data('emission-id');
+                window.location.href = "{{ route('emissions.show', ':id') }}".replace(':id', emissionId);
             });
         });
     </script>

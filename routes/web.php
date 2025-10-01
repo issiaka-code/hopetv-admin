@@ -1,20 +1,24 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\VideoController;
+use App\Http\Controllers\AvenirController;
+use App\Http\Controllers\PriereController;
 use App\Http\Controllers\PodcastController;
+use App\Http\Controllers\EmissionController;
 use App\Http\Controllers\PlaylistController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InfoBulleController;
 use App\Http\Controllers\LienUtileController;
 use App\Http\Controllers\ParametreController;
+use App\Http\Controllers\ProgrammeController;
 use App\Http\Controllers\TemoignageController;
-use App\Http\Controllers\AvenirController;
+use App\Http\Controllers\HomeCharityController;
+use App\Http\Controllers\EmissionItemController;
 use App\Http\Controllers\EnseignementController;
 use App\Http\Controllers\Auth\AuthViewController;
-use App\Http\Controllers\InfoImportanteController;
-use App\Http\Controllers\EmissionController;
 use App\Http\Controllers\EtablissementController;
+use App\Http\Controllers\InfoImportanteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -50,17 +54,36 @@ Route::middleware('auth')->group(function () {
     Route::resource('temoignages', TemoignageController::class);
     Route::post('temoignages/{id}/publish', [TemoignageController::class, 'publish'])->name('temoignages.publish');
     Route::post('temoignages/{id}/unpublish', [TemoignageController::class, 'unpublish'])->name('temoignages.unpublish');    
+
+    Route::resource('programmes', ProgrammeController::class);
+    Route::post('programmes/{id}/publish', [ProgrammeController::class, 'publish'])->name('programmes.publish');
+    Route::post('programmes/{id}/unpublish', [ProgrammeController::class, 'unpublish'])->name('programmes.unpublish');
+
+    Route::resource('prieres', PriereController::class);
+    Route::post('prieres/{id}/publish', [PriereController::class, 'publish'])->name('prieres.publish');
+    Route::post('prieres/{id}/unpublish', [PriereController::class, 'unpublish'])->name('prieres.unpublish');
+
+    Route::resource('home-charities', HomeCharityController::class);
+    Route::post('home-charities/{id}/publish', [HomeCharityController::class, 'publish'])->name('home-charities.publish');
+    Route::post('home-charities/{id}/unpublish', [HomeCharityController::class, 'unpublish'])->name('home-charities.unpublish');
     Route::resource('enseignements', EnseignementController::class);
     Route::post('enseignements/{id}/publish', [EnseignementController::class, 'publish'])->name('enseignements.publish');
     Route::post('enseignements/{id}/unpublish', [EnseignementController::class, 'unpublish'])->name('enseignements.unpublish');
+
+    // Routes pour les Émissions (catégories)
     Route::resource('emissions', EmissionController::class);
-    Route::post('emissions/{id}/publish', [EmissionController::class, 'publish'])->name('emissions.publish');
-    Route::post('emissions/{id}/unpublish', [EmissionController::class, 'unpublish'])->name('emissions.unpublish');
-    Route::post('emissions/{id}/toggle_status', [EmissionController::class, 'toggleStatus'])->name('emissions.toggle_status');
+    Route::post('emissions/{id}/toggle-status', [EmissionController::class, 'toggleStatus'])->name('emissions.toggleStatus');
+
+    // Routes pour les Vidéos à l'intérieur d'une Émission (ajout et suppression uniquement)
+    Route::resource('emissions.items', EmissionItemController::class)
+        ->shallow()
+        ->only(['store', 'destroy']);
+
+    Route::post('emissions/{emission}/items/{item}/toggle-status', [EmissionItemController::class, 'toggleStatus'])
+        ->name('emissions.items.toggleStatus');
+
     Route::resource('playlists', PlaylistController::class)->except(['show']);
     Route::get('playlists/{id}/show', [PlaylistController::class, 'show'])->name('playlists.show');
-    // A venir (comme playlist mais sélectionne uniquement les vidéos non publiées)
-    Route::resource('a-venir', AvenirController::class);
     Route::resource('info-bulles', InfoBulleController::class);
     Route::resource('parametres', ParametreController::class);
     Route::resource('liens-utiles', LienUtileController::class);
