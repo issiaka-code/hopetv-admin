@@ -51,13 +51,13 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group thumbnail-section">
                         <label for="thumbnail">Image de couverture</label>
                         <div class="custom-file">
                             <input type="file" class="custom-file-input" id="thumbnail" name="thumbnail" accept="image/*">
                             <label class="custom-file-label" for="thumbnail">Choisir une image...</label>
                         </div>
-                        <small class="form-text text-muted">Si non fournie pour un lien YouTube, une miniature sera récupérée automatiquement.</small>
+                        <small class="form-text text-muted">Si vous n'en fournissez pas, une miniature sera générée automatiquement pour certains liens.</small>
                     </div>
                 </div>
                 <div class="modal-footer">

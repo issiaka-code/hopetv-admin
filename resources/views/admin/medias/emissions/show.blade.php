@@ -174,11 +174,14 @@
                     $('.video-link-section').hide();
                     $('#video_file').prop('required', true);
                     $('#video_url').prop('required', false);
+                    $('.thumbnail-section').show();
                 } else {
                     $('.video-upload-section').hide();
                     $('.video-link-section').show();
                     $('#video_file').prop('required', false);
                     $('#video_url').prop('required', true);
+                    // Masquer le champ image de couverture pour les liens
+                    $('.thumbnail-section').hide();
                 }
             });
 
@@ -345,6 +348,7 @@
                 $('.video-link-section').hide();
                 $('#video_file').prop('required', true);
                 $('#video_url').prop('required', false);
+                $('.thumbnail-section').show();
             });
         });
     </script>
