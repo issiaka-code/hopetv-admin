@@ -48,6 +48,7 @@ class EtablissementController extends Controller
             'telephone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
             'adresse' => 'nullable|string|max:500',
+            'maps_link' => 'nullable|url|max:500',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'is_active' => 'nullable|boolean',
         ]);
@@ -69,6 +70,7 @@ class EtablissementController extends Controller
                 'telephone' => $request->telephone,
                 'email' => $request->email,
                 'adresse' => $request->adresse,
+                'maps_link' => $request->maps_link,
                 'image_path' => $imagePath,
                 'is_active' => $request->boolean('is_active', true),
                 'insert_by' => auth()->id(),
@@ -99,6 +101,7 @@ class EtablissementController extends Controller
             'telephone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
             'adresse' => 'nullable|string|max:500',
+            'maps_link' => 'nullable|url|max:500',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'is_active' => 'nullable|boolean',
         ]);
@@ -125,6 +128,7 @@ class EtablissementController extends Controller
                 'telephone' => $request->telephone,
                 'email' => $request->email,
                 'adresse' => $request->adresse,
+                'maps_link' => $request->maps_link,
                 'image_path' => $imagePath,
                 'is_active' => $request->boolean('is_active', $etab->is_active),
                 'update_by' => auth()->id(),

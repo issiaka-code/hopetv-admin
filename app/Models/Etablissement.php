@@ -15,6 +15,7 @@ class Etablissement extends Model
         'telephone',
         'email',
         'adresse',
+        'maps_link',
         'image_path',
         'is_active',
         'is_deleted',
@@ -40,7 +41,10 @@ class Etablissement extends Model
      */
     public function getGoogleMapsUrlAttribute()
     {
-        if ($this->adresse) {
+        if (!empty($this->maps_link)) {
+            return $this->maps_link;
+        }
+        if (!empty($this->adresse)) {
             return "https://www.google.com/maps/search/" . urlencode($this->adresse);
         }
         

@@ -49,6 +49,12 @@
             @error('adresse')<div class="invalid-feedback">{{ $message }}</div>@enderror
           </div>
 
+          <div class="form-group">
+            <label class="font-weight-bold">Lien Google Maps (optionnel)</label>
+            <input type="url" name="maps_link" id="addMapsLink" class="form-control @error('maps_link') is-invalid @enderror" placeholder="https://maps.google.com/...">
+            @error('maps_link')<div class="invalid-feedback">{{ $message }}</div>@enderror
+          </div>
+
 
 
           <div class="form-group">
