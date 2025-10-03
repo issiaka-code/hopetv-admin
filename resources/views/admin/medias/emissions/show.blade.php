@@ -88,36 +88,38 @@
                         <div class="video-thumbnail-container">
                             @if (!empty($item->thumbnail))
                                 <img class="video-thumbnail" src="{{ $item->thumbnail_url }}" alt="Couverture vidéo">
-                                <div class="thumbnail-overlay open-video" data-video-url="{{ $item->type_video === 'video' ? asset('storage/emissions/videos/' . $item->video_url) : $item->video_url }}" data-video-type="{{ $item->type_video }}">
+                                <div class="thumbnail-overlay open-video" data-video-url="{{ $item->type_video === 'video' ? asset('storage/emissions/videos/' . $item->video_url) : $item->video_url }}" data-video-type="{{ $item->type_video }}" data-description="{{ $item->description_video }}" data-title="{{ $item->titre_video }}">
                                     <i class="fas fa-play-circle"></i>
                                 </div>
                             @elseif ($item->type_video === 'video' && $item->video_url)
                                 <video class="video-thumbnail"
                                     src="{{ asset('storage/emissions/videos/' . $item->video_url) }}" controls
                                     muted></video>
-                                <div class="thumbnail-overlay open-video" data-video-url="{{ asset('storage/emissions/videos/' . $item->video_url) }}" data-video-type="video">
+                                <div class="thumbnail-overlay open-video" data-video-url="{{ asset('storage/emissions/videos/' . $item->video_url) }}" data-video-type="video" data-description="{{ $item->description_video }}" data-title="{{ $item->titre_video }}">
                                     <i class="fas fa-play-circle"></i>
                                 </div>
                             @elseif($item->type_video === 'link' && $item->video_url)
                                 @php
                                     $ytId = null;
+                                    $embedUrl = $item->video_url;
                                     if (strpos($item->video_url, 'youtube.com') !== false || strpos($item->video_url, 'youtu.be') !== false) {
                                         // Extraire l'ID YouTube côté Blade pour afficher une couverture
                                         $pattern = '/^.*((youtu.be\\/)|(v\\/)|(\\/u\\/\\w\\/)|(embed\\/)|(watch\\?))\\??v?=?([^#&?]*).*/';
                                         if (preg_match($pattern, $item->video_url, $matches) && strlen($matches[7]) === 11) {
                                             $ytId = $matches[7];
+                                            $embedUrl = 'https://www.youtube.com/embed/' . $ytId;
                                         }
                                     }
                                 @endphp
                                 @if($ytId)
                                     <img class="video-thumbnail" src="https://img.youtube.com/vi/{{ $ytId }}/hqdefault.jpg" alt="Couverture vidéo">
-                                    <div class="thumbnail-overlay open-video" data-video-url="{{ $item->video_url }}" data-video-type="link">
+                                    <div class="thumbnail-overlay open-video" data-video-url="{{ $embedUrl }}" data-video-type="link" data-description="{{ $item->description_video }}" data-title="{{ $item->titre_video }}">
                                         <i class="fas fa-play-circle"></i>
                                     </div>
                                 @else
                                     <div class="bg-light d-flex align-items-center justify-content-center h-100 position-relative">
                                         <span class="text-muted">Aperçu indisponible</span>
-                                        <div class="thumbnail-overlay open-video" data-video-url="{{ $item->video_url }}" data-video-type="link">
+                                        <div class="thumbnail-overlay open-video" data-video-url="{{ $embedUrl }}" data-video-type="link" data-description="{{ $item->description_video }}" data-title="{{ $item->titre_video }}">
                                             <i class="fas fa-play-circle"></i>
                                         </div>
                                     </div>
@@ -133,8 +135,10 @@
                             <p class="card-text text-muted">{{ Str::limit($item->description_video, 30) }}</p>
                             <div class="d-flex justify-content-between align-items-center my">
                                 <button class="btn btn-info btn-sm view-video-btn rounded"
-                                    data-video-url="{{ $item->type_video === 'video' ? asset('storage/emissions/videos/' . $item->video_url) : $item->video_url }}"
-                                    data-video-type="{{ $item->type_video }}">
+                                    data-video-url="{{ $item->type_video === 'video' ? asset('storage/emissions/videos/' . $item->video_url) : (isset($embedUrl) ? $embedUrl : $item->video_url) }}"
+                                    data-video-type="{{ $item->type_video }}"
+                                    data-description="{{ $item->description_video }}"
+                                    data-title="{{ $item->titre_video }}">
                                     <i class="fa fa-eye"></i> Voir
                                 </button>
                                 
@@ -255,8 +259,14 @@
                     $('#iframePlayerContainer').removeClass('d-none');
                     if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
                         const videoId = getYouTubeId(videoUrl);
-                        // Autoplay + mute pour contourner les politiques navigateur
-                        $('#modalIframePlayer').attr('src', `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`);
+                        if (videoId) {
+                            // Autoplay + mute + modestbranding
+                            $('#modalIframePlayer').attr('src', `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0&modestbranding=1`);
+                        } else {
+                            // Fallback à l'URL brute si extraction échoue
+                            const sep = videoUrl.includes('?') ? '&' : '?';
+                            $('#modalIframePlayer').attr('src', `${videoUrl}${sep}autoplay=1&mute=1`);
+                        }
                         $('#mediaTypeBadge').text('Vidéo en ligne');
                     } else {
                         // Tentative d'autoplay pour iframe générique (peut être limité par la plateforme)
@@ -265,8 +275,8 @@
                         $('#mediaTypeBadge').text('Vidéo en ligne');
                     }
                 }
-                $('#videoTitle').text($(this).closest('.card').find('.card-title').text());
-                $('#videoDescription').text($(this).closest('.card').find('.card-text').text());
+                $('#videoTitle').text($(this).data('title') || $(this).closest('.card').find('.card-title').text());
+                $('#videoDescription').text($(this).data('description') || $(this).closest('.card').find('.card-text').text());
                 $('#videoViewModal').modal('show');
             });
 
@@ -289,7 +299,12 @@
                     $('#iframePlayerContainer').removeClass('d-none');
                     if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
                         const videoId = getYouTubeId(videoUrl);
-                        $('#modalIframePlayer').attr('src', `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`);
+                        if (videoId) {
+                            $('#modalIframePlayer').attr('src', `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0&modestbranding=1`);
+                        } else {
+                            const sep = videoUrl.includes('?') ? '&' : '?';
+                            $('#modalIframePlayer').attr('src', `${videoUrl}${sep}autoplay=1&mute=1`);
+                        }
                         $('#mediaTypeBadge').text('Vidéo en ligne');
                     } else {
                         const sep = videoUrl.includes('?') ? '&' : '?';
@@ -298,8 +313,8 @@
                     }
                 }
                 const $card = $(this).closest('.card');
-                $('#videoTitle').text($card.find('.card-title').text());
-                $('#videoDescription').text($card.find('.card-text').text());
+                $('#videoTitle').text($(this).data('title') || $card.find('.card-title').text());
+                $('#videoDescription').text($(this).data('description') || $card.find('.card-text').text());
                 $('#videoViewModal').modal('show');
             });
 
@@ -311,11 +326,39 @@
                 $('#modalIframePlayer').attr('src', '');
             });
 
-            // Fonction pour extraire l'ID d'une vidéo YouTube
+            // Fonction robuste pour extraire l'ID d'une vidéo YouTube (watch, youtu.be, embed, shorts)
             function getYouTubeId(url) {
-                const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-                const match = url.match(regExp);
-                return (match && match[7].length === 11) ? match[7] : false;
+                try {
+                    const u = new URL(url);
+                    const host = u.hostname.replace('www.', '');
+                    // Cas standard: ?v=ID
+                    if ((host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtu.be' || host === 'youtube-nocookie.com')) {
+                        if (u.searchParams.has('v') && u.searchParams.get('v').length === 11) {
+                            return u.searchParams.get('v');
+                        }
+                        // youtu.be/ID
+                        const parts = u.pathname.split('/').filter(Boolean);
+                        if (host === 'youtu.be' && parts.length >= 1 && parts[0].length === 11) {
+                            return parts[0];
+                        }
+                        // /embed/ID
+                        const embedIdx = parts.indexOf('embed');
+                        if (embedIdx !== -1 && parts[embedIdx + 1] && parts[embedIdx + 1].length === 11) {
+                            return parts[embedIdx + 1];
+                        }
+                        // /shorts/ID
+                        const shortsIdx = parts.indexOf('shorts');
+                        if (shortsIdx !== -1 && parts[shortsIdx + 1] && parts[shortsIdx + 1].length === 11) {
+                            return parts[shortsIdx + 1];
+                        }
+                    }
+                } catch (e) {
+                    // ignore
+                }
+                // Regex fallback
+                const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(shorts\/)|(watch\?))\??v?=?([^#&?]*).*/;
+                const match = (url || '').match(regExp);
+                return (match && match[8] && match[8].length === 11) ? match[8] : false;
             }
 
             // Gestion de la soumission du formulaire d'ajout

@@ -396,9 +396,6 @@
                                         <div class="mb-2">
                                             <small class="text-muted">
                                                 <i class="fas fa-video"></i> {{ $emission->videos_count }} vidéos
-                                                @if ($emission->videos_count > 0)
-                                                    | <i class="fas fa-clock"></i> {{ $emission->total_duration }}
-                                                @endif
                                             </small>
                                         </div>
 
