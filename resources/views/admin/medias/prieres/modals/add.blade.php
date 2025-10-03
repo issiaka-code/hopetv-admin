@@ -36,7 +36,7 @@
                         <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
                             <label class="btn btn-outline-primary active" id="addMediaTypeAudioLabel">
                                 <input type="radio" name="media_type" id="addMediaTypeAudio" value="audio"
-                                    autocomplete="off" checked>
+                                    autocomplete="off">
                                 <i class="fas fa-music mr-1"></i> Audio
                             </label>
                             <label class="btn btn-outline-primary" id="addMediaTypeVideoFileLabel">
@@ -205,7 +205,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary bg-secondary"
                         data-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" onclick="this.disabled=true; this.form.submit();" class="btn btn-primary"> 
                         <i class="fas fa-plus-circle"></i> Ajouter
                     </button>
                 </div>

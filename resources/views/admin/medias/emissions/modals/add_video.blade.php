@@ -62,7 +62,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn bg-secondary" data-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Ajouter la vidéo</button>
+                    <button type="submit" onclick="this.disabled=true; this.form.submit();" class="btn btn-primary"> Ajouter la vidéo</button>
                 </div>
             </form>
         </div>
