@@ -14,10 +14,14 @@ return new class extends Migration
         Schema::create('emission_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('id_Emission')->constrained('emissions');
-            $table->string('titre_video');
-            $table->text('description_video')->nullable();
-            $table->enum('type_video', ['video', 'link']);
-            $table->string('video_url')->nullable();
+            
+            // Remplacement des anciens champs vidéo
+            $table->string('nom');
+            $table->text('description')->nullable();
+
+            // Lien vers la table medias
+            $table->foreignId('id_media')->constrained('medias')->onDelete('cascade');
+
             $table->boolean('is_active')->default(true);
             $table->foreignId('insert_by')->constrained('users');
             $table->foreignId('update_by')->constrained('users');

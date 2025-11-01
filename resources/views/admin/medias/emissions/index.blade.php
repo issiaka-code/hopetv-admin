@@ -409,7 +409,7 @@
                                                 class="text-muted mb-1">{{ $emission->created_at->format('d/m/Y') }}</small>
 
                                             <div class="btn-group">
-                                                <a href="{{ route('emissions.show', $emission->id) }}"
+                                                <a href="{{ route('show-media-emission', $emission->id) }}"
                                                     class="btn btn-sm btn-outline-info rounded" title="Voir les détails">
                                                     <i class="fas fa-eye"></i>
                                                 </a>

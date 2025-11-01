@@ -12,7 +12,7 @@ class Media extends Model
     // Table name
     protected $table = 'medias';
 
-    protected $fillable = ['url_fichier', 'thumbnail', 'type', 'images', 'insert_by', 'update_by', 'is_deleted', 'is_published'];
+    protected $fillable = ['url_fichier', 'thumbnail', 'type', 'images', 'insert_by', 'update_by', 'is_deleted', 'is_published','status'];
 
     protected $casts = [
         'images' => 'array',

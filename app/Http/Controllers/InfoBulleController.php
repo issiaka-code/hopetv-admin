@@ -6,6 +6,8 @@ use App\Models\InfoBulle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use RealRashid\SweetAlert\Facades\Alert;
+use App\Events\InfoBulleChanged;
+use Illuminate\Support\Facades\Broadcast;
 
 class InfoBulleController extends Controller
 {
@@ -51,13 +53,14 @@ class InfoBulleController extends Controller
         ]);
 
         try {
-            InfoBulle::create([
+             $infoBulle=InfoBulle::create([
                 'titre' => $validated['titre'],
                 'texte' => $validated['texte'],
                 'is_active' => $validated['is_active'] ?? true,
                 'insert_by' => Auth::id(),
                 'update_by' => Auth::id(),
             ]);
+            broadcast(new InfoBulleChanged('create', $infoBulle->id))->toOthers();
             notify()->success('Succès', 'Info-bulle ajoutée avec succès.');
             return redirect()->route('info-bulles.index');
                 
@@ -90,6 +93,7 @@ class InfoBulleController extends Controller
                 'update_by' => Auth::id(),
             ]);
 
+            broadcast(new InfoBulleChanged('update', $infoBulle->id))->toOthers();
             notify()->success('Succès', 'Info-bulle modifiée avec succès.');
             
             return redirect()->route('info-bulles.index');
@@ -113,6 +117,9 @@ class InfoBulleController extends Controller
                 'is_active' => !$infoBulle->is_active,
                 'update_by' => Auth::id(),
             ]);
+
+            broadcast(new InfoBulleChanged('toggle', $infoBulle->id))->toOthers();
+
             notify()->success('Succès', 'Statut de l\'info-bulle modifié avec succès.');
 
             return redirect()->route('info-bulles.index');
@@ -136,7 +143,7 @@ class InfoBulleController extends Controller
                 'is_deleted' => true,
                 'update_by' => Auth::id(),
             ]);
-
+            broadcast(new InfoBulleChanged('delete', $infoBulle->id))->toOthers();
             notify()->success('Succès', 'Info-bulle supprimée avec succès.');
 
             return redirect()->route('info-bulles.index');

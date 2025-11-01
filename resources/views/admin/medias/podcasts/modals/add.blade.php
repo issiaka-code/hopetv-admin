@@ -122,6 +122,21 @@
                                 @enderror
                                 <small class="form-text text-muted">Collez le lien complet de la vidéo (YouTube, Vimeo, etc.)</small>
                             </div> 
+
+                             <div class="form-group">
+                                <label class="font-weight-bold">Image de couverture <span class="text-danger">*</span></label>
+                                <div class="custom-file">
+                                    <input type="file" name="image_couverture_videolink" id="addAudioThumbnaillink"
+                                        class="custom-file-input @error('image_couverture_video') is-invalid @enderror"
+                                        accept="image/*" required>
+                                    <label class="custom-file-label" for="addAudioThumbnaillink">Choisir une image</label>
+                                    @error('image_couverture_video')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <small class="form-text text-muted">Formats acceptés: JPG, PNG, GIF (max 2MB)</small>
+                            </div>
+
                         </div>
                     </div>
                     <div class="modal-footer">

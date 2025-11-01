@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use RealRashid\SweetAlert\Facades\Alert;
+use Illuminate\Support\Facades\Validator;
 
 class EmissionController extends Controller
 {
@@ -41,11 +42,38 @@ class EmissionController extends Controller
     {
         Log::info('Début de la création d’une émission', ['user_id' => auth()->id()]);
 
-        $request->validate([
-            'nom' => 'required|string|max:255',
-            'description' => 'required|string',
-            'image_couverture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'nom' => 'required|string|max:255',
+                'description' => 'required|string',
+                'image_couverture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ],
+            [
+                'nom.required' => 'Le nom est obligatoire.',
+                'nom.string' => 'Le nom doit être une chaîne de caractères.',
+                'nom.max' => 'Le nom ne doit pas dépasser 255 caractères.',
+
+                'description.required' => 'La description est obligatoire.',
+                'description.string' => 'La description doit être une chaîne de caractères.',
+
+                'image_couverture.image' => "L'image de couverture doit être une image.",
+                'image_couverture.mimes' => "L'image de couverture doit être au format : jpeg, png, jpg ou gif.",
+                'image_couverture.max' => "L'image de couverture ne doit pas dépasser 2 Mo.",
+            ]
+        );
+
+        if ($validator->fails()) {
+            foreach ($validator->errors()->all() as $error) {
+                notify()->error($error);
+            }
+
+            return [
+                'success' => false,
+                'errors' => $validator->errors(),
+            ];
+        }
+
 
         try {
             if (! auth()->check()) {
@@ -61,7 +89,7 @@ class EmissionController extends Controller
 
                 $thumbnailFile = $request->file('image_couverture');
                 $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $thumbnailUniqueName = $thumbnailName.'_thumb_'.now()->format('Ymd_His').'.'.$thumbnailFile->getClientOriginalExtension();
+                $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
 
                 $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
 
@@ -99,18 +127,17 @@ class EmissionController extends Controller
                 'nom' => $emission->nom,
             ]);
 
-            notify()->success('Succès', 'Émission "'.$emission->nom.'" créée avec succès.');
+            notify()->success('Succès', 'Émission "' . $emission->nom . '" créée avec succès.');
 
             Log::info('Fin du processus de création d’émission avec succès.');
 
             return redirect()->route('emissions.index');
-
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la création de l’émission : '.$e->getMessage(), [
+            Log::error('Erreur lors de la création de l’émission : ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            Alert::error('Erreur', 'Impossible de créer l’émission. '.$e->getMessage());
+            Alert::error('Erreur', 'Impossible de créer l’émission. ' . $e->getMessage());
 
             return back()->withInput();
         }
@@ -177,7 +204,7 @@ class EmissionController extends Controller
 
                 $thumbnailFile = $request->file('image_couverture');
                 $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $thumbnailUniqueName = $thumbnailName.'_thumb_'.now()->format('Ymd_His').'.'.$thumbnailFile->getClientOriginalExtension();
+                $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
                 $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
             }
 
@@ -196,12 +223,12 @@ class EmissionController extends Controller
                 'updated_at' => now(),
             ]);
 
-            notify()->success('Succès', 'Émission "'.$emission->nom.'" modifiée avec succès.');
+            notify()->success('Succès', 'Émission "' . $emission->nom . '" modifiée avec succès.');
 
             return redirect()->route('emissions.index');
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la modification de l\'émission: '.$e->getMessage());
-            Alert::error('Erreur', 'Impossible de modifier l\'émission. '.$e->getMessage());
+            Log::error('Erreur lors de la modification de l\'émission: ' . $e->getMessage());
+            Alert::error('Erreur', 'Impossible de modifier l\'émission. ' . $e->getMessage());
 
             return back()->withInput();
         }
@@ -230,14 +257,14 @@ class EmissionController extends Controller
             ]);
 
             DB::commit();
-            notify()->success('Succès', 'Émission "'.$emission->nom.'" supprimée avec succès.');
+            notify()->success('Succès', 'Émission "' . $emission->nom . '" supprimée avec succès.');
 
             return redirect()->route('emissions.index');
         } catch (\Exception $e) {
             DB::rollBack();
 
             return redirect()->back()
-                ->with('error', 'Erreur lors de la suppression: '.$e->getMessage());
+                ->with('error', 'Erreur lors de la suppression: ' . $e->getMessage());
         }
     }
 }

@@ -26,4 +26,6 @@ class Prophetie extends Model
     {
         return $this->belongsTo(User::class, 'update_by');
     }
+
+    
 }

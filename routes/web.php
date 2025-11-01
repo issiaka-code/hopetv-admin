@@ -54,7 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::post('podcasts/{id}/unpublish', [PodcastController::class, 'unpublish'])->name('podcasts.unpublish');
     Route::resource('temoignages', TemoignageController::class);
     Route::post('temoignages/{id}/publish', [TemoignageController::class, 'publish'])->name('temoignages.publish');
-    Route::post('temoignages/{id}/unpublish', [TemoignageController::class, 'unpublish'])->name('temoignages.unpublish');    
+    Route::post('temoignages/{id}/unpublish', [TemoignageController::class, 'unpublish'])->name('temoignages.unpublish');
     Route::resource('propheties', ProphetieController::class);
     Route::post('propheties/{id}/publish', [ProphetieController::class, 'publish'])->name('propheties.publish');
     Route::post('propheties/{id}/unpublish', [ProphetieController::class, 'unpublish'])->name('propheties.unpublish');
@@ -79,9 +79,15 @@ Route::middleware('auth')->group(function () {
     Route::post('emissions/{id}/toggle-status', [EmissionController::class, 'toggleStatus'])->name('emissions.toggleStatus');
 
     // Routes pour les Vidéos à l'intérieur d'une Émission (ajout et suppression uniquement)
-    Route::resource('emissions.items', EmissionItemController::class)
-        ->shallow()
-        ->only(['store', 'destroy']);
+    Route::resource('emissionsitem', EmissionItemController::class);
+        
+    Route::get('show/media/emission/{id}', [EmissionItemController::class, 'index'])
+    ->name('show-media-emission');
+       Route::get('/emissions/items/{id}/voir', [EmissionItemController::class, 'voir'])
+    ->name('emissions.items.voir');
+
+
+
 
     Route::post('emissions/{emission}/items/{item}/toggle-status', [EmissionItemController::class, 'toggleStatus'])
         ->name('emissions.items.toggleStatus');
@@ -98,6 +104,28 @@ Route::middleware('auth')->group(function () {
     // Etablissements (Siège / Annexe)
     Route::resource('etablissements', EtablissementController::class);
     Route::post('etablissements/{id}/toggle_status', [EtablissementController::class, 'toggleStatus'])->name('etablissements.toggle_status');
+    Route::get('/voirVideo/{id}', [VideoController::class, 'voirVideo'])->name('videos.voirVideo');
+
+    Route::get('/podcasts/{id}/voir', [PodcastController::class, 'voirpodcast'])->name('podcasts.voir');
+    Route::get('/voir/temoignage/{id}', [TemoignageController::class, 'voirTemoignage'])->name('temoignage.voir');
+
+    // Prière
+    Route::get('/voir/prieres/{id}', [PriereController::class, 'voirPriere'])->name('prieres.voir');
+
+    // Home Charity
+    Route::get('/voir/home-charities/{id}', [HomeCharityController::class, 'voirHomeCharity'])->name('home-charities.voir');
+
+    // Enseignement
+    Route::get('/voir/enseignements/{id}', [EnseignementController::class, 'voirEnseignement'])->name('enseignements.voir');
+
+    // Prophétie
+    Route::get('/voir/propheties/{id}', [ProphetieController::class, 'voirProphetie'])->name('propheties.voir');
+
+    // Podcast
+    Route::get('/voir/podcasts/{id}', [PodcastController::class, 'voirPodcast'])->name('podcasts.voir');
 });
+
+
+
 
 require __DIR__ . '/auth.php';

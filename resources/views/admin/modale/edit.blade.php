@@ -1,20 +1,20 @@
 <!-- Modal pour ÉDITER un témoignage -->
-<div class="modal fade" id="editTemoignageModal" tabindex="-1" role="dialog" aria-labelledby="editTemoignageModalLabel" aria-hidden="true">
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-static" role="document">
         <div class="modal-content">
             <div class="modal-header bg-info text-dark">
-                <h5 class="modal-title" id="editTemoignageModalLabel">Modifier le témoignage</h5>
+                <h5 class="modal-title" id="editModalLabel">Modifier le témoignage</h5>
                 <button type="button" class="close text-dark" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="editTemoignageForm" method="POST" enctype="multipart/form-data">
+            <form id="editForm" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="font-weight-bold">Nom <span class="text-danger">*</span></label>
-                        <input type="text" name="nom" id="editTemoignageNom" class="form-control @error('nom') is-invalid @enderror" required>
+                        <input type="text" name="nom" id="editNom" class="form-control @error('nom') is-invalid @enderror" required>
                         @error('nom')
                         <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -22,7 +22,7 @@
 
                     <div class="form-group">
                         <label class="font-weight-bold">Description <span class="text-danger">*</span></label>
-                        <textarea name="description" id="editTemoignageDescription" class="form-control @error('description') is-invalid @enderror" rows="3" required></textarea>
+                        <textarea name="description" id="editDescription" class="form-control @error('description') is-invalid @enderror" rows="3" required></textarea>
                         @error('description')
                         <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -143,8 +143,8 @@
                         <div class="form-group">
                             <label class="font-weight-bold">Image de couverture</label>
                             <div class="custom-file">
-                                <input type="file" name="image_couverture_video" id="editTemoignageThumbnail" class="custom-file-input @error('image_couverture_video') is-invalid @enderror" accept="image/*">
-                                <label class="custom-file-label" for="editTemoignageThumbnail">Choisir une nouvelle
+                                <input type="file" name="image_couverture_video" id="editThumbnail" class="custom-file-input @error('image_couverture_video') is-invalid @enderror" accept="image/*">
+                                <label class="custom-file-label" for="editThumbnail">Choisir une nouvelle
                                     image</label>
                                 @error('image_couverture_video')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -227,6 +227,9 @@
                         </div>
                     </div>
                 </div>
+
+                <input type="hidden" id="input-emission-id" name="inputemissionid" >
+                
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary bg-secondary" data-dismiss="modal">Annuler</button>
                     <button type="submit" class="btn btn-info bg-info">
@@ -237,3 +240,4 @@
         </div>
     </div>
 </div>
+

@@ -10,4 +10,5 @@
 <!-- Custom JS File -->
 <script src="js/custom.js"></script>
 <script src="js/script_sweetalert.js"></script>
+
 @notifyJs

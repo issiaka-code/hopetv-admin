@@ -1,6 +1,5 @@
 <!-- Modal pour ÉDITER un podcast -->
-<div class="modal fade" id="editPodcastModal" tabindex="-1" role="dialog" aria-labelledby="editPodcastModalLabel"
-    aria-hidden="true">
+<div class="modal fade" id="editPodcastModal" tabindex="-1" role="dialog" aria-labelledby="editPodcastModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-static" role="document">
         <div class="modal-content">
             <div class="modal-header bg-info text-dark">
@@ -15,19 +14,17 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="font-weight-bold">Nom <span class="text-danger">*</span></label>
-                        <input type="text" name="nom" id="editPodcastnom"
-                            class="form-control @error('nom') is-invalid @enderror" required>
+                        <input type="text" name="nom" id="editPodcastnom" class="form-control @error('nom') is-invalid @enderror" required>
                         @error('nom')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
                     <div class="form-group">
                         <label class="font-weight-bold">Description <span class="text-danger">*</span></label>
-                        <textarea name="description" id="editPodcastDescription"
-                            class="form-control @error('description') is-invalid @enderror" rows="3" required></textarea>
+                        <textarea name="description" id="editPodcastDescription" class="form-control @error('description') is-invalid @enderror" rows="3" required></textarea>
                         @error('description')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -55,36 +52,36 @@
                         <div class="form-group">
                             <label class="font-weight-bold">Fichier Audio</label>
                             <div class="custom-file">
-                                <input type="file" name="fichier_audio" id="editAudioFile"
-                                    class="custom-file-input @error('fichier_audio') is-invalid @enderror"
-                                    accept="audio/*">
+                                <input type="file" name="fichier_audio" id="editAudioFile" class="custom-file-input @error('fichier_audio') is-invalid @enderror" accept="audio/*">
                                 <label class="custom-file-label" for="editAudioFile">Choisir un nouveau fichier audio</label>
                                 @error('fichier_audio')
-                                    <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <small class="form-text text-muted">Formats acceptés: MP3, WAV, AAC, etc. (max 50MB)</small>
 
                             <div id="editCurrentAudio" class="mt-2">
                                 <small>Fichier actuel: <span id="editCurrentAudioName"></span></small>
+
                             </div>
                         </div>
-                        
+
                         <div class="form-group">
                             <label class="font-weight-bold">Image de couverture <span class="text-danger">*</span></label>
                             <div class="custom-file">
-                                <input type="file" name="image_couverture_audio" id="editAudioThumbnail"
-                                    class="custom-file-input @error('image_couverture_audio') is-invalid @enderror"
-                                    accept="image/*">
+                                <input type="file" name="image_couverture_audio" id="editAudioThumbnail" class="custom-file-input @error('image_couverture_audio') is-invalid @enderror" accept="image/*">
                                 <label class="custom-file-label" for="editAudioThumbnail">Choisir une nouvelle image</label>
                                 @error('image_couverture_audio')
-                                    <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <small class="form-text text-muted">Formats acceptés: JPG, PNG, GIF (max 2MB)</small>
-                            
+
                             <div id="editCurrentAudioThumbnail" class="mt-2">
                                 <small>Image actuelle: <span id="editCurrentAudioThumbnailName"></span></small>
+                                <div class="mt-1">
+                                    <img id="editCurrentAudioThumbnailPreview" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 100px; max-height: 60px; display: none;">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -94,36 +91,36 @@
                         <div class="form-group">
                             <label class="font-weight-bold">Fichier Vidéo</label>
                             <div class="custom-file">
-                                <input type="file" name="fichier_video" id="editVideoFile"
-                                    class="custom-file-input @error('fichier_video') is-invalid @enderror"
-                                    accept="video/*">
+                                <input type="file" name="fichier_video" id="editVideoFile" class="custom-file-input @error('fichier_video') is-invalid @enderror" accept="video/*">
                                 <label class="custom-file-label" for="editVideoFile">Choisir un nouveau fichier vidéo</label>
                                 @error('fichier_video')
-                                    <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <small class="form-text text-muted">Formats acceptés: MP4, AVI, MOV, etc. (max 100MB)</small>
 
                             <div id="editCurrentVideo" class="mt-2">
                                 <small>Fichier actuel: <span id="editCurrentVideoName"></span></small>
+
                             </div>
                         </div>
-                        
+
                         <div class="form-group">
                             <label class="font-weight-bold">Image de couverture <span class="text-danger">*</span></label>
                             <div class="custom-file">
-                                <input type="file" name="image_couverture_video" id="editVideoThumbnail"
-                                    class="custom-file-input @error('image_couverture_video') is-invalid @enderror"
-                                    accept="image/*">
+                                <input type="file" name="image_couverture_video" id="editVideoThumbnail" class="custom-file-input @error('image_couverture_video') is-invalid @enderror" accept="image/*">
                                 <label class="custom-file-label" for="editVideoThumbnail">Choisir une nouvelle image</label>
                                 @error('image_couverture_video')
-                                    <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <small class="form-text text-muted">Formats acceptés: JPG, PNG, GIF (max 2MB)</small>
-                            
+
                             <div id="editCurrentVideoThumbnail" class="mt-2">
                                 <small>Image actuelle: <span id="editCurrentVideoThumbnailName"></span></small>
+                                <div class="mt-1">
+                                    <img id="editCurrentVideoThumbnailPreview" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 100px; max-height: 60px; display: none;">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -132,17 +129,34 @@
                     <div id="editVideoLinkSection" class="d-none">
                         <div class="form-group">
                             <label class="font-weight-bold">Lien Vidéo <span class="text-danger">*</span></label>
-                            <input type="url" name="lien_video" id="editVideoLink"
-                                class="form-control @error('lien_video') is-invalid @enderror"
-                                placeholder="https://www.youtube.com/watch?v=..." pattern="https?://.+" 
-                                title="Veuillez entrer une URL valide commençant par http:// ou https://">
+                            <input type="url" name="lien_video" id="editVideoLink" class="form-control @error('lien_video') is-invalid @enderror" placeholder="https://www.youtube.com/watch?v=..." pattern="https?://.+" title="Veuillez entrer une URL valide commençant par http:// ou https://">
                             @error('lien_video')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                             <small class="form-text text-muted">URL YouTube, Vimeo, ou autre service de streaming vidéo</small>
 
                             <div id="editCurrentLink" class="mt-2">
                                 <small>Lien actuel: <span id="editCurrentLinkValue"></span></small>
+
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="font-weight-bold">Image de couverture <span class="text-danger">*</span></label>
+                            <div class="custom-file">
+                                <input type="file" name="image_couverture_videolink" id="editLinkThumbnail" class="custom-file-input @error('image_couverture_video') is-invalid @enderror" accept="image/*">
+                                <label class="custom-file-label" for="editLinkThumbnail">Choisir une nouvelle image</label>
+                                @error('image_couverture_video')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <small class="form-text text-muted">Formats acceptés: JPG, PNG, GIF (max 2MB)</small>
+
+                            <div id="editCurrentVideoThumbnaillink" class="mt-2">
+                                <small>Image actuelle: <span id="editCurrentLinkThumbnailName"></span></small>
+                                <div class="mt-1">
+                                    <img id="editCurrentLinkThumbnailPreview" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 100px; max-height: 60px; display: none;">
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessVideoJob;
 use App\Models\Media;
 use App\Models\Enseignement;
+use App\Services\MediaService;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,8 +14,16 @@ use Illuminate\Support\Facades\Storage;
 use RealRashid\SweetAlert\Facades\Alert;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 
+
 class EnseignementController extends Controller
 {
+
+      protected $mediaService;
+
+    public function __construct(MediaService $mediaService)
+    {
+        $this->mediaService = $mediaService;
+    }
     public function index(Request $request)
     {
         $query = Enseignement::with('media')->where('is_deleted', false)->latest();
@@ -99,7 +109,9 @@ class EnseignementController extends Controller
                 'media_url' => $enseignement->media && !$isImages ? asset('storage/' . $enseignement->media->url_fichier) : null,
                 'has_thumbnail' => $enseignement->media && $enseignement->media->thumbnail ? true : ($isImages && !empty(json_decode($enseignement->media->url_fichier ?? '[]', true))),
                 'is_published' => $enseignement->media->is_published ?? true,
-                'images' => $isImages ? array_map(function ($p) { return asset('storage/' . $p); }, (array) (json_decode($enseignement->media->url_fichier ?? '[]', true) ?: [])) : [],
+                'images' => $isImages ? array_map(function ($p) {
+                    return asset('storage/' . $p);
+                }, (array) (json_decode($enseignement->media->url_fichier ?? '[]', true) ?: [])) : [],
             ];
         });
 
@@ -111,146 +123,84 @@ class EnseignementController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'nom' => 'required|string|max:255',
-            'description' => 'required|string',
-            'media_type' => 'required|in:audio,video_file,video_link,pdf,images',
-        ]);
-        try {
-            if ($request->media_type === 'audio') {
-                $request->validate([
-                    'fichier_audio' => 'required|file|mimes:mp3,wav,aac,ogg,flac|max:512000',
-                    'image_couverture_audio' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-                ]);
 
-                $file = $request->file('fichier_audio');
-                $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $uniqueName = $filename . '_' . now()->format('Ymd_His') . '.mp3';
-                $filePath = $file->storeAs('audios', $uniqueName, 'public');
-            } elseif ($request->media_type === 'video_file') {
-                $request->validate([
-                    'fichier_video' => 'required|file|mimes:mp4,avi,mov,wmv,flv,mkv,webm|max:1024000',
-                    'image_couverture_video' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-                ]);
+        $result = $this->mediaService->createMedia($request);
 
-                $file = $request->file('fichier_video');
-                $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $uniqueName = $filename . '_' . now()->format('Ymd_His') . '.mp4';
-                $tempPath = $file->storeAs('temp/videos', "tmp_{$uniqueName}");
-                FFMpeg::fromDisk('local')
-                    ->open($tempPath)
-                    ->export()
-                    ->toDisk('public')
-                    ->inFormat(new \FFMpeg\Format\Video\X264('aac', 'libx264'))
-                    ->resize(1280, 720)
-                    ->save('videos/' . $uniqueName);
-                Storage::disk('local')->delete($tempPath);
-                $filePath = 'videos/' . $uniqueName;
-            } elseif ($request->media_type === 'video_link') {
-                $request->validate([
-                    'lien_video' => 'required|url',
-                ]);
-                $filePath = $request->lien_video;
-            } elseif ($request->media_type === 'pdf') {
-                $request->validate([
-                    'fichier_pdf' => 'required|file|mimes:pdf|max:20480',
-                    'image_couverture_pdf' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-                ]);
-                $file = $request->file('fichier_pdf');
-                $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $uniqueName = $filename . '_' . now()->format('Ymd_His') . '.pdf';
-                $filePath = $file->storeAs('pdfs', $uniqueName, 'public');
-            } elseif ($request->media_type === 'images') {
-                $request->validate([
-                    'images' => 'required|array|min:1',
-                    'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-                    'image_couverture_images' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-                ]);
+        if (is_array($result) && isset($result['success']) && $result['success'] === false) {
+            $errors = $result['errors'];
 
-                $storedImages = [];
-                if ($request->hasFile('images')) {
-                    foreach ($request->file('images') as $imgFile) {
-                        if ($imgFile && $imgFile->isValid()) {
-                            $base = pathinfo($imgFile->getClientOriginalName(), PATHINFO_FILENAME);
-                            $ext = $imgFile->getClientOriginalExtension();
-                            $unique = Str::slug($base, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $ext;
-                            $path = $imgFile->storeAs('images/enseignements', $unique, 'public');
-                            $storedImages[] = $path;
-                        }
-                    }
+            if ($errors instanceof \Illuminate\Support\MessageBag) {
+                // Erreurs de validation Laravel
+                foreach ($errors->all() as $error) {
+                    notify()->error($error);
                 }
-                if (empty($storedImages)) {
-                    throw new \Exception('Aucune image valide n\'a été fournie');
+            } elseif (is_array($errors)) {
+                // Si jamais tu retournes un tableau d’erreurs
+                foreach ($errors as $error) {
+                    notify()->error($error);
                 }
-                $filePath = json_encode($storedImages);
-                $thumbnailPath = null;
-                if ($request->hasFile('image_couverture_images')) {
-                    $thumbnailFile = $request->file('image_couverture_images');
-                    if ($thumbnailFile->isValid()) {
-                        $thumbName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
-                        $thumbUniqueName = 'thumb_' . Str::slug($thumbName, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $thumbnailFile->getClientOriginalExtension();
-                        $thumbnailPath = $thumbnailFile->storeAs('thumbnails/images', $thumbUniqueName, 'public');
-                    }
-                }
+            } elseif (is_string($errors)) {
+                // Erreur simple sous forme de message texte
+                notify()->error($errors);
             }
 
-            $type = $request->media_type === 'audio' ? 'audio' : ($request->media_type === 'video_file' ? 'video' : ($request->media_type === 'video_link' ? 'link' : ($request->media_type === 'pdf' ? 'pdf' : 'images')));
-
-            if ($request->media_type !== 'images') {
-                $thumbnailPath = null;
-            }
-
-            if ($request->media_type === 'audio' && $request->hasFile('image_couverture_audio')) {
-                $thumbnailFile = $request->file('image_couverture_audio');
-                if ($thumbnailFile->isValid()) {
-                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
-                    $thumbnailUniqueName = 'thumb_' . $thumbnailName . '_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
-                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails/audios', $thumbnailUniqueName, 'public');
-                }
-            } elseif ($request->media_type === 'video_file' && $request->hasFile('image_couverture_video')) {
-                $thumbnailFile = $request->file('image_couverture_video');
-                if ($thumbnailFile->isValid()) {
-                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
-                    $thumbnailUniqueName = 'thumb_' . $thumbnailName . '_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
-                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails/videos', $thumbnailUniqueName, 'public');
-                }
-            } elseif ($request->media_type === 'pdf' && $request->hasFile('image_couverture_pdf')) {
-                $thumbnailFile = $request->file('image_couverture_pdf');
-                if ($thumbnailFile->isValid()) {
-                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
-                    $thumbnailUniqueName = 'thumb_' . $thumbnailName . '_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
-                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails/pdfs', $thumbnailUniqueName, 'public');
-                }
-            }
-
-            $mediaData = [
-                'url_fichier' => $filePath,
-                'thumbnail' => $thumbnailPath,
-                'type' => $type,
-                'insert_by' => auth()->id(),
-                'update_by' => auth()->id(),
-            ];
-
-            $media = Media::create($mediaData);
-
-            $enseignement = Enseignement::create([
-                'id_media' => $media->id,
-                'nom' => $request->nom,
-                'description' => $request->description,
-                'insert_by' => auth()->id(),
-                'update_by' => auth()->id(),
-            ]);
-
-            notify()->success('Succès', 'Enseignement ajouté avec succès.');
-            return redirect()->route('enseignements.index');
-        } catch (\Exception $e) {
-            Log::error('EnseignementController@store erreur', [
-                'message' => $e->getMessage(),
-            ]);
-            Alert::error('Erreur', 'Impossible de créer l\'enseignement: ' . $e->getMessage());
             return back()->withInput();
         }
+        $media = $result;
+
+        $enseignement = Enseignement::create([
+            'id_media' => $media->id,
+            'nom' => $request->nom,
+            'description' => $request->description,
+            'insert_by' => auth()->id(),
+            'update_by' => auth()->id(),
+        ]);
+
+
+        notify()->success('Succès', 'Enseignement ajouté avec succès.');
+        return redirect()->route('enseignements.index');
     }
+
+    public function update(Request $request, $id)
+    {
+
+        $data = Enseignement::findOrFail($id);
+        $media = $data->media;
+
+
+        $result = $this->mediaService->updateMedia($request, $media);
+
+        if (is_array($result) && isset($result['success']) && $result['success'] === false) {
+            $errors = $result['errors'];
+
+            if ($errors instanceof \Illuminate\Support\MessageBag) {
+                // Erreurs de validation Laravel
+                foreach ($errors->all() as $error) {
+                    notify()->error($error);
+                }
+            } elseif (is_array($errors)) {
+                // Si jamais tu retournes un tableau d’erreurs
+                foreach ($errors as $error) {
+                    notify()->error($error);
+                }
+            } elseif (is_string($errors)) {
+                // Erreur simple sous forme de message texte
+                notify()->error($errors);
+            }
+
+            return back()->withInput();
+        }
+
+        $data->update([
+            'nom' => $request->nom,
+            'description' => $request->description,
+            'update_by' => auth()->id(),
+        ]);
+
+        notify()->success('Succès', 'Enseignement mis à jour avec succès.');
+        return redirect()->route('enseignements.index');
+    }
+
 
     public function edit(Enseignement $enseignement)
     {
@@ -262,191 +212,7 @@ class EnseignementController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'nom' => 'required|string|max:255',
-            'description' => 'required|string',
-            'media_type' => 'required|in:audio,video_file,video_link,pdf,images',
-            'image_couverture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
 
-        try {
-            DB::beginTransaction();
-
-            $enseignement = Enseignement::findOrFail($id);
-            $media = $enseignement->media;
-            if (!$media) {
-                throw new \Exception('Média introuvable pour cet enseignement');
-            }
-
-            $filePath = $media->url_fichier;
-            $thumbnailPath = $media->thumbnail;
-            $type = $media->type;
-
-            if ($request->media_type === 'audio') {
-                $request->validate([
-                    'fichier_audio' => 'nullable|file|mimes:mp3,wav,aac,ogg,flac|max:512000',
-                ]);
-                if ($request->hasFile('fichier_audio')) {
-                    $file = $request->file('fichier_audio');
-                    $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                    $uniqueName = $filename . '_' . now()->format('Ymd_His') . '.mp3';
-                    if ($media->type === 'audio' && Storage::disk('public')->exists($media->url_fichier)) {
-                        Storage::disk('public')->delete($media->url_fichier);
-                    }
-                    $filePath = $file->storeAs('audios', $uniqueName, 'public');
-                    $type = 'audio';
-                }
-                if ($request->hasFile('image_couverture_audio')) {
-                    if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
-                        Storage::disk('public')->delete($media->thumbnail);
-                    }
-                    $thumbnailFile = $request->file('image_couverture_audio');
-                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
-                    $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
-                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
-                }
-            } elseif ($request->media_type === 'video_file') {
-                $request->validate([
-                    'fichier_video' => 'nullable|file|mimes:mp4,avi,mov,wmv,flv,mkv,webm|max:1024000',
-                ]);
-                if ($request->hasFile('fichier_video')) {
-                    $file = $request->file('fichier_video');
-                    $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                    $uniqueName = $filename . '_' . now()->format('Ymd_His') . '.mp4';
-                    if ($media->type === 'video' && Storage::disk('public')->exists($media->url_fichier)) {
-                        Storage::disk('public')->delete($media->url_fichier);
-                    }
-                    $tempPath = $file->storeAs('temp/videos', "tmp_{$uniqueName}");
-                    FFMpeg::fromDisk('local')
-                        ->open($tempPath)
-                        ->export()
-                        ->toDisk('public')
-                        ->inFormat(new \FFMpeg\Format\Video\X264('aac', 'libx264'))
-                        ->resize(1280, 720)
-                        ->save('videos/' . $uniqueName);
-                    Storage::disk('local')->delete($tempPath);
-                    $filePath = 'videos/' . $uniqueName;
-                    $type = 'video';
-                }
-                if ($request->hasFile('image_couverture_video')) {
-                    if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
-                        Storage::disk('public')->delete($media->thumbnail);
-                    }
-                    $thumbnailFile = $request->file('image_couverture_video');
-                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
-                    $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
-                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
-                }
-            } elseif ($request->media_type === 'video_link') {
-                $request->validate([
-                    'lien_video' => 'required|url',
-                ]);
-                $filePath = $request->lien_video;
-                $type = 'link';
-            } elseif ($request->media_type === 'pdf') {
-                $request->validate([
-                    'fichier_pdf' => 'nullable|file|mimes:pdf|max:20480',
-                ]);
-                if ($request->hasFile('fichier_pdf')) {
-                    $file = $request->file('fichier_pdf');
-                    $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                    $uniqueName = $filename . '_' . now()->format('Ymd_His') . '.pdf';
-                    if ($media->type === 'pdf' && Storage::disk('public')->exists($media->url_fichier)) {
-                        Storage::disk('public')->delete($media->url_fichier);
-                    }
-                    $filePath = $file->storeAs('pdfs', $uniqueName, 'public');
-                    $type = 'pdf';
-                }
-                if ($request->hasFile('image_couverture_pdf')) {
-                    if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
-                        Storage::disk('public')->delete($media->thumbnail);
-                    }
-                    $thumbnailFile = $request->file('image_couverture_pdf');
-                    $thumbnailName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
-                    $thumbnailUniqueName = $thumbnailName . '_thumb_' . now()->format('Ymd_His') . '.' . $thumbnailFile->getClientOriginalExtension();
-                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailUniqueName, 'public');
-                }
-            } elseif ($request->media_type === 'images') {
-                $request->validate([
-                    'images' => 'nullable',
-                    'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-                    'image_couverture_images' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-                    'existing_images_delete' => 'nullable|array',
-                    'existing_images_delete.*' => 'string',
-                ]);
-                $type = 'images';
-                $existingImages = [];
-                if (!empty($media->url_fichier)) {
-                    $decoded = json_decode($media->url_fichier, true);
-                    $existingImages = is_array($decoded) ? $decoded : [];
-                }
-                $newImages = [];
-                // Remove checked ones
-                $toDelete = (array) $request->input('existing_images_delete', []);
-                if (!empty($toDelete)) {
-                    $existingImages = array_values(array_filter($existingImages, function ($path) use ($toDelete) {
-                        return !in_array($path, $toDelete, true);
-                    }));
-                    foreach ($toDelete as $delPath) {
-                        if ($delPath && Storage::disk('public')->exists($delPath)) {
-                            Storage::disk('public')->delete($delPath);
-                        }
-                    }
-                }
-                if ($request->hasFile('images')) {
-                    foreach ($request->file('images') as $imgFile) {
-                        if ($imgFile && $imgFile->isValid()) {
-                            $base = pathinfo($imgFile->getClientOriginalName(), PATHINFO_FILENAME);
-                            $ext = $imgFile->getClientOriginalExtension();
-                            $unique = Str::slug($base, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $ext;
-                            $path = $imgFile->storeAs('images/enseignements', $unique, 'public');
-                            $newImages[] = $path;
-                        }
-                    }
-                }
-                if ($request->hasFile('image_couverture_images')) {
-                    if ($media->thumbnail && Storage::disk('public')->exists($media->thumbnail)) {
-                        Storage::disk('public')->delete($media->thumbnail);
-                    }
-                    $thumbnailFile = $request->file('image_couverture_images');
-                    if ($thumbnailFile->isValid()) {
-                        $thumbName = pathinfo($thumbnailFile->getClientOriginalName(), PATHINFO_FILENAME);
-                        $thumbUniqueName = 'thumb_' . Str::slug($thumbName, '_') . '_' . now()->format('Ymd_Hisv') . '.' . $thumbnailFile->getClientOriginalExtension();
-                        $thumbnailPath = $thumbnailFile->storeAs('thumbnails/images', $thumbUniqueName, 'public');
-                    }
-                }
-                $filePath = json_encode(array_values(array_merge($existingImages, $newImages)));
-            }
-
-            $updateData = [
-                'url_fichier' => $filePath,
-                'thumbnail' => $thumbnailPath,
-                'type' => $type,
-                'update_by' => auth()->id(),
-            ];
-
-            $media->update($updateData);
-
-            $enseignement->update([
-                'nom' => $request->nom,
-                'description' => $request->description,
-                'update_by' => auth()->id(),
-            ]);
-
-            DB::commit();
-            notify()->success('Succès', 'Enseignement mis à jour avec succès.');
-            return redirect()->route('enseignements.index');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('EnseignementController@update erreur', [
-                'message' => $e->getMessage(),
-            ]);
-            Alert::error('Erreur', 'Impossible de mettre à jour l\'enseignement: ' . $e->getMessage());
-            return back()->withInput();
-        }
-    }
 
     public function destroy($id)
     {
@@ -525,6 +291,58 @@ class EnseignementController extends Controller
             return redirect()->back();
         }
     }
+
+    public function voirEnseignement($id)
+    {
+        try {
+            $enseignement = Enseignement::with('media')->findOrFail($id);
+            $media = $enseignement->media;
+
+            if ($media->status !== 'ready') {
+                return response()->json([
+                    'status' => 'processing',
+                    'message' => 'Le média est en cours de traitement. Veuillez réessayer plus tard.'
+                ], 200);
+            }
+
+            $url = $media->url_fichier;
+
+            if ($media->type === 'link' && !empty($url)) {
+                if (str_contains($url, 'youtube.com/watch?v=')) {
+                    $url = str_replace('watch?v=', 'embed/', $url);
+                } elseif (str_contains($url, 'youtu.be/')) {
+                    $url = str_replace('youtu.be/', 'www.youtube.com/embed/', $url);
+                } elseif (str_contains($url, 'vimeo.com/')) {
+                    $videoId = basename(parse_url($url, PHP_URL_PATH));
+                    $url = "https://player.vimeo.com/video/" . $videoId;
+                }
+            }
+
+            if ($media->type === 'images') {
+                $images = json_decode($media->url_fichier, true) ?? [];
+                $imageUrls = array_map(fn($path) => asset('storage/' . $path), $images);
+            }
+
+            return response()->json([
+                'status' => 'ready',
+                'data' => [
+                    'id' => $enseignement->id,
+                    'titre' => $enseignement->titre,
+                    'description' => $enseignement->description,
+                    'media' => [
+                        'url' => $media->type === 'images' ? ($imageUrls ?? []) : (
+                            in_array($media->type, ['audio', 'video', 'pdf']) ? asset('storage/' . $url) : $url
+                        ),
+                        'thumbnail' => $media->thumbnail ? asset('storage/' . $media->thumbnail) : null,
+                        'type' => $media->type,
+                    ],
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Erreur lors du chargement de l’enseignement : ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }
-
-

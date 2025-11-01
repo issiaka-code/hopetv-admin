@@ -26,11 +26,18 @@
         </div>
 
     </div>
-    
+
 
     @include('admin.partials.script')
-   
+
+    @include('admin.modale.add')
+    @include('admin.modale.edit')
+    @include('admin.modale.view')
+
     @stack('scripts')
+    <script src="{{ asset('store-modale.js') }}"></script>
+    <script src="{{ asset('media-viewer.js') }}"></script>
+    <script src="{{ asset('edit-modale.js') }}"></script>
 
 </body>
 

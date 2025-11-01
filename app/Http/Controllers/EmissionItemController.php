@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Emission;
 use App\Models\EmissionItem;
+use App\Services\MediaService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -14,131 +16,64 @@ use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 
 class EmissionItemController extends Controller
 {
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request, Emission $emission)
+    protected $mediaService;
+
+    public function __construct(MediaService $mediaService)
     {
-        $request->validate([
-            'titre_video' => 'required|string|max:255',
-            'description_video' => 'nullable|string',
-            'type_video' => 'required|in:upload,link',
-            'video_url' => 'nullable|required_if:type_video,link|url',
-            'video_file' => 'nullable|required_if:type_video,upload|file|mimes:mp4,mov,ogg,qt|max:102400', // Max 100MB
-            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        ]);
+        $this->mediaService = $mediaService;
+    }
 
-        try {
-            DB::beginTransaction();
+    public function index($id)
+    {
+        $emissionItems = EmissionItem::with('media','emission')
+            ->where('is_deleted', false)
+            ->latest()
+            ->paginate(10); // 10 éléments par page
 
-            Log::info('EmissionItemController@store: début ajout vidéo', [
-                'emission_id' => $emission->id,
-                'user_id' => auth()->id(),
-                'payload' => [
-                    'titre_video' => $request->input('titre_video'),
-                    'type_video_input' => $request->input('type_video'),
-                    'has_video_file' => $request->hasFile('video_file'),
-                    'has_video_url' => !empty($request->input('video_url')),
-                ],
-            ]);
+        return view('admin.medias.emissions.show', compact('emissionItems'));
+    }
 
-            $data = $request->only(['titre_video', 'description_video', 'type_video', 'video_url']);
-            $data['id_Emission'] = $emission->id;
-            $data['insert_by'] = auth()->id();
-            $data['update_by'] = auth()->id();
-            $data['is_active'] = true; // Active by default
-            // Mapper le type 'upload' venant du formulaire vers la valeur DB 'video'
-            $data['type_video'] = $request->type_video === 'upload' ? 'video' : 'link';
+    public function store(Request $request)
+    {
+        $emission = Emission::where('is_deleted', false)
+            ->findOrFail($request->inputemissionid);
 
-            Log::info('EmissionItemController@store: type mappé', [
-                'type_video_mapped' => $data['type_video'],
-            ]);
+        $result = $this->mediaService->createMedia($request);
 
-            if ($request->hasFile('video_file') && $request->type_video === 'upload') {
-                $file = $request->file('video_file');
-                $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $uniqueName = $filename . '_' . now()->format('Ymd_His') . '.mp4';
-                // Stockage temporaire
-                $tempPath = $file->storeAs('temp/emissions', "tmp_{$uniqueName}");
-                // Compression avec FFmpeg
-                FFMpeg::fromDisk('local')
-                    ->open($tempPath)
-                    ->export()
-                    ->toDisk('public')
-                    ->inFormat(new \FFMpeg\Format\Video\X264('aac', 'libx264'))
-                    ->resize(1280, 720)
-                    ->save('emissions/videos/' . $uniqueName);
-                // Nettoyage du fichier temporaire
-                Storage::disk('local')->delete($tempPath);
-                // Stocker le nom du fichier dans video_url (pas de colonne video_file)
-                $data['video_url'] = $uniqueName;
+        if (is_array($result) && isset($result['success']) && $result['success'] === false) {
+            $errors = $result['errors'];
 
-                Log::info('EmissionItemController@store: fichier vidéo traité', [
-                    'original_name' => $file->getClientOriginalName(),
-                    'stored_name' => $uniqueName,
-                    'public_path' => 'emissions/videos/' . $uniqueName,
-                ]);
-            }
-
-            // Générer automatiquement une miniature pour certains liens connus (YouTube, Vimeo)
-            if ($data['type_video'] === 'link' && empty($data['thumbnail']) && !empty($data['video_url'])) {
-                $link = $data['video_url'];
-                try {
-                    // YouTube
-                    if (strpos($link, 'youtube.com') !== false || strpos($link, 'youtu.be') !== false) {
-                        $pattern = '/^.*((youtu.be\\/)|(v\\/)|(\\/u\\/\\w\\/)|(embed\\/)|(watch\\?))\\??v?=?([^#&?]*).*/';
-                        if (preg_match($pattern, $link, $matches) && strlen($matches[7]) === 11) {
-                            $ytId = $matches[7];
-                            $data['thumbnail'] = 'https://img.youtube.com/vi/' . $ytId . '/hqdefault.jpg';
-                        }
-                    }
-                    // Vimeo (via oEmbed)
-                    elseif (strpos($link, 'vimeo.com') !== false) {
-                        $oembedUrl = 'https://vimeo.com/api/oembed.json?url=' . urlencode($link);
-                        $response = @file_get_contents($oembedUrl);
-                        if ($response) {
-                            $json = json_decode($response, true);
-                            if (!empty($json['thumbnail_url'])) {
-                                $data['thumbnail'] = $json['thumbnail_url'];
-                            }
-                        }
-                    }
-                } catch (\Throwable $t) {
-                    Log::warning('EmissionItemController@store: génération miniature lien échouée', [
-                        'error' => $t->getMessage(),
-                    ]);
+            if ($errors instanceof \Illuminate\Support\MessageBag) {
+                // Erreurs de validation Laravel
+                foreach ($errors->all() as $error) {
+                    notify()->error($error);
                 }
+            } elseif (is_array($errors)) {
+                // Si jamais tu retournes un tableau d’erreurs
+                foreach ($errors as $error) {
+                    notify()->error($error);
+                }
+            } elseif (is_string($errors)) {
+                // Erreur simple sous forme de message texte
+                notify()->error($errors);
             }
 
-            // Miniature (optionnelle)
-            if ($request->hasFile('thumbnail')) {
-                $thumb = $request->file('thumbnail');
-                $thumbName = pathinfo($thumb->getClientOriginalName(), PATHINFO_FILENAME) . '_' . now()->format('Ymd_His') . '.' . $thumb->getClientOriginalExtension();
-                $thumb->storeAs('emissions/thumbnails', $thumbName, 'public');
-                $data['thumbnail'] = $thumbName;
-                Log::info('EmissionItemController@store: miniature stockée', [
-                    'thumbnail' => $thumbName,
-                ]);
-            }
-
-            $created = EmissionItem::create($data);
-
-            Log::info('EmissionItemController@store: vidéo créée', [
-                'item_id' => $created->id,
-                'type_video' => $created->type_video,
-                'video_url' => $created->video_url,
-            ]);
-
-            DB::commit();
-            notify()->success('Succès', 'Vidéo ajoutée avec succès à l\'émission "' . $emission->nom . '".');
-            return redirect()->route('emissions.show', $emission->id);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Erreur lors de l\'ajout de la vidéo: ' . $e->getMessage());
-            Alert::error('Erreur', 'Impossible d\'ajouter la vidéo: ' . $e->getMessage());
             return back()->withInput();
         }
+        $media = $result;
+
+        $created = EmissionItem::create([
+            'id_Emission' => $emission->id,
+            'nom' => $request->nom,
+            'description' => $request->description,
+            'id_media' => $media->id,
+            'insert_by' => Auth::id(),
+            'update_by' => Auth::id(),
+            'is_active' => true,
+        ]);
+
+        notify()->success('Succès', 'Vidéo ajoutée avec succès à l\'émission "' . $emission->nom . '".');
+        return redirect()->route('emissions.show', $emission->id);
     }
 
     /**
@@ -152,69 +87,44 @@ class EmissionItemController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Emission $emission, EmissionItem $item)
+    public function update(Request $request,EmissionItem $item)
     {
-        $request->validate([
-            'titre_video' => 'required|string|max:255',
-            'description_video' => 'nullable|string',
-            'type_video' => 'required|in:upload,link',
-            'video_url' => 'nullable|required_if:type_video,link|url',
-            'video_file' => 'nullable|file|mimes:mp4,mov,ogg,qt|max:102400',
-        ]);
+         $emission = Emission::where('is_deleted', false)
+            ->findOrFail($request->inputemissionid);
+            
+        $media = $item->media;
+        $result = $this->mediaService->updateMedia($request, $media);
 
-        try {
-            DB::beginTransaction();
+        if (is_array($result) && isset($result['success']) && $result['success'] === false) {
+            $errors = $result['errors'];
 
-            $data = $request->only(['titre_video', 'description_video', 'type_video', 'video_url']);
-            $data['update_by'] = auth()->id();
-            // Mapper le type 'upload' vers 'video' pour la DB
-            $data['type_video'] = $request->type_video === 'upload' ? 'video' : 'link';
-
-            if ($request->hasFile('video_file') && $request->type_video === 'upload') {
-                // Delete old file
-                if ($item->video_url) {
-                    Storage::disk('public')->delete('emissions/videos/' . $item->video_url);
+            if ($errors instanceof \Illuminate\Support\MessageBag) {
+                // Erreurs de validation Laravel
+                foreach ($errors->all() as $error) {
+                    notify()->error($error);
                 }
-                $file = $request->file('video_file');
-                $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $uniqueName = $filename . '_' . now()->format('Ymd_His') . '.mp4';
-                // Stockage temporaire
-                $tempPath = $file->storeAs('temp/emissions', "tmp_{$uniqueName}");
-                // Compression avec FFmpeg
-                FFMpeg::fromDisk('local')
-                    ->open($tempPath)
-                    ->export()
-                    ->toDisk('public')
-                    ->inFormat(new \FFMpeg\Format\Video\X264('aac', 'libx264'))
-                    ->resize(1280, 720)
-                    ->save('emissions/videos/' . $uniqueName);
-                // Nettoyage du fichier temporaire
-                Storage::disk('local')->delete($tempPath);
-                // Stocker le nom du fichier dans video_url (pas de colonne video_file)
-                $data['video_url'] = $uniqueName;
-            } elseif ($request->type_video === 'link') {
-                 // Delete old file if switching from upload to link
-                if ($item->video_url) {
-                    Storage::disk('public')->delete('emissions/videos/' . $item->video_url);
+            } elseif (is_array($errors)) {
+                // Si jamais tu retournes un tableau d’erreurs
+                foreach ($errors as $error) {
+                    notify()->error($error);
                 }
-                // Conserver/mettre à jour le lien dans video_url
-                $data['video_url'] = $request->video_url;
+            } elseif (is_string($errors)) {
+                // Erreur simple sous forme de message texte
+                notify()->error($errors);
             }
 
-            // Ignorer la miniature: la colonne n'existe pas dans le schéma actuel
-
-            $item->update($data);
-
-            DB::commit();
-            notify()->success('Succès', 'Vidéo mise à jour avec succès.');
-            return redirect()->route('emissions.show', $emission->id);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Erreur lors de la mise à jour de la vidéo: ' . $e->getMessage());
-            Alert::error('Erreur', 'Impossible de mettre à jour la vidéo: ' . $e->getMessage());
             return back()->withInput();
         }
+
+        $item->update([
+            'nom' => $request->nom,
+            'description' => $request->description,
+            'id_media' => $media->id,
+            'update_by' => Auth::id(),
+        ]);
+
+        notify()->success('Succès', 'Vidéo mise à jour avec succès.');
+        return redirect()->route('emissions.show', $emission->id);
     }
 
     /**
@@ -268,4 +178,71 @@ class EmissionItemController extends Controller
             return back();
         }
     }
+
+    public function voir($id)
+{
+    try {
+        // Charger l'item avec son média et l'émission associée
+        $item = EmissionItem::with(['media', 'emission'])->findOrFail($id);
+        $media = $item->media;
+
+        // Vérifie si le média est prêt (si tu gères un statut de traitement)
+        if (isset($media->status) && $media->status !== 'ready') {
+            return response()->json([
+                'status' => 'processing',
+                'message' => 'Le média est en cours de traitement. Veuillez réessayer plus tard.'
+            ], 200);
+        }
+
+        $url = $media->url_fichier;
+
+        // 🎥 Si le média est un lien (YouTube, Vimeo, etc.)
+        if ($media->type === 'link' && !empty($url)) {
+            if (str_contains($url, 'youtube.com/watch?v=')) {
+                $url = str_replace('watch?v=', 'embed/', $url);
+            } elseif (str_contains($url, 'youtu.be/')) {
+                $url = str_replace('youtu.be/', 'www.youtube.com/embed/', $url);
+            } elseif (str_contains($url, 'vimeo.com/')) {
+                $videoId = basename(parse_url($url, PHP_URL_PATH));
+                $url = "https://player.vimeo.com/video/" . $videoId;
+            }
+        }
+
+        // 🖼️ Si le média contient plusieurs images
+        if ($media->type === 'images') {
+            $images = json_decode($media->url_fichier, true) ?? [];
+            $imageUrls = array_map(fn($path) => asset('storage/' . $path), $images);
+        }
+
+        // 📦 Construction de la réponse JSON
+        return response()->json([
+            'status' => 'ready',
+            'data' => [
+                'id' => $item->id,
+                'nom' => $item->nom,
+                'description' => $item->description,
+                'emission' => [
+                    'id' => $item->emission->id,
+                    'titre' => $item->emission->nom ?? 'Sans titre',
+                ],
+                'media' => [
+                    'url' => $media->type === 'images'
+                        ? ($imageUrls ?? [])
+                        : (in_array($media->type, ['audio', 'video', 'pdf'])
+                            ? asset('storage/' . $url)
+                            : $url),
+                    'thumbnail' => $media->thumbnail ? asset('storage/' . $media->thumbnail) : null,
+                    'type' => $media->type,
+                ],
+            ],
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Erreur lors du chargement de l’émission : ' . $e->getMessage(),
+        ], 500);
+    }
+}
+
 }

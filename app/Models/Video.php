@@ -10,7 +10,7 @@ class Video extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['id_media', 'nom', 'description', 'couleur', 'duree', 'insert_by', 'update_by', 'is_deleted'];
+    protected $fillable = ['id_media', 'nom', 'description', 'couleur', 'duree', 'insert_by', 'update_by', 'is_deleted','status'];
 
     // Relations
     public function media()
