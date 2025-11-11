@@ -59,58 +59,14 @@ class PriereController extends Controller
             $isPdf = $priere->media && $priere->media->type === 'pdf';
             $isImages = $priere->media && $priere->media->type === 'images';
 
-
-            $thumbnailUrl = null;
-
-            if ($isVideoLink) {
-                $rawUrl = $priere->media->url_fichier;
-
-                if (Str::contains($rawUrl, 'youtube.com/watch?v=')) {
-                    $videoId = explode('v=', parse_url($rawUrl, PHP_URL_QUERY))[1] ?? null;
-                    $videoId = explode('&', $videoId)[0];
-                    $thumbnailUrl = $videoId ? "https://www.youtube.com/embed/$videoId" : $rawUrl;
-                } elseif (Str::contains($rawUrl, 'youtu.be/')) {
-                    $videoId = basename(parse_url($rawUrl, PHP_URL_PATH));
-                    $thumbnailUrl = "https://www.youtube.com/embed/$videoId";
-                } else {
-                    $thumbnailUrl = $rawUrl;
-                }
-            } elseif ($isVideoFile) {
-                // Pour les vidéos fichiers, utiliser l'image de couverture si disponible
-                if ($priere->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $priere->media->thumbnail);
-                } else {
-                    $thumbnailUrl = asset('storage/' . $priere->media->url_fichier);
-                }
-            } elseif ($isAudio || $isPdf) {
-                // Pour les audios et PDFs, utiliser l'image de couverture si disponible
-                if ($priere->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $priere->media->thumbnail);
-                } else {
-                    $thumbnailUrl = null; // Pas d'image, on utilisera l'icône par défaut
-                }
-            } elseif ($isImages) {
-                // Pour les images, utiliser la couverture si dispo, sinon la première image de url_fichier (JSON)
-                if ($priere->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $priere->media->thumbnail);
-                } else {
-                    $imagesArr = [];
-                    if (!empty($priere->media->url_fichier)) {
-                        $decoded = json_decode($priere->media->url_fichier, true);
-                        $imagesArr = is_array($decoded) ? $decoded : [];
-                    }
-                    $first = count($imagesArr) > 0 ? $imagesArr[0] : null;
-                    $thumbnailUrl = $first ? asset('storage/' . $first) : null;
-                }
-            }
             return (object)[
                 'id' => $priere->id,
                 'nom' => $priere->nom,
                 'description' => $priere->description,
                 'created_at' => $priere->created_at,
                 'media_type' => $isAudio ? 'audio' : ($isVideoLink ? 'video_link' : ($isVideoFile ? 'video_file' : ($isPdf ? 'pdf' : ($isImages ? 'images' : null)))),
-                'thumbnail_url' => $thumbnailUrl,
-                'video_url' => $isVideoFile ? asset('storage/' . $priere->media->url_fichier) : $thumbnailUrl,
+                'thumbnail_url' => asset('storage/' . $priere->media->thumbnail),
+               // 'video_url' => $isVideoFile ? asset('storage/' . $priere->media->url_fichier) : $thumbnailUrl,
                 'media_url' => $priere->media && !$isImages ? asset('storage/' . $priere->media->url_fichier) : null,
                 'has_thumbnail' => $priere->media && $priere->media->thumbnail ? true : ($isImages && !empty(json_decode($priere->media->url_fichier ?? '[]', true))),
                 'is_published' => $priere->media->is_published ?? true,

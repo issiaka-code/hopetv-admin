@@ -60,58 +60,14 @@ class ProphetieController extends Controller
             $isPdf = $prophetie->media && $prophetie->media->type === 'pdf';
             $isImages = $prophetie->media && $prophetie->media->type === 'images';
 
-
-            $thumbnailUrl = null;
-
-            if ($isVideoLink) {
-                $rawUrl = $prophetie->media->url_fichier;
-
-                if (Str::contains($rawUrl, 'youtube.com/watch?v=')) {
-                    $videoId = explode('v=', parse_url($rawUrl, PHP_URL_QUERY))[1] ?? null;
-                    $videoId = explode('&', $videoId)[0];
-                    $thumbnailUrl = $videoId ? "https://www.youtube.com/embed/$videoId" : $rawUrl;
-                } elseif (Str::contains($rawUrl, 'youtu.be/')) {
-                    $videoId = basename(parse_url($rawUrl, PHP_URL_PATH));
-                    $thumbnailUrl = "https://www.youtube.com/embed/$videoId";
-                } else {
-                    $thumbnailUrl = $rawUrl;
-                }
-            } elseif ($isVideoFile) {
-                // Pour les vidéos fichiers, utiliser l'image de couverture si disponible
-                if ($prophetie->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $prophetie->media->thumbnail);
-                } else {
-                    $thumbnailUrl = asset('storage/' . $prophetie->media->url_fichier);
-                }
-            } elseif ($isAudio || $isPdf) {
-                // Pour les audios et PDFs, utiliser l'image de couverture si disponible
-                if ($prophetie->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $prophetie->media->thumbnail);
-                } else {
-                    $thumbnailUrl = null; // Pas d'image, on utilisera l'icône par défaut
-                }
-            } elseif ($isImages) {
-                // Pour les images, utiliser la couverture si dispo, sinon la première image de url_fichier (JSON)
-                if ($prophetie->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $prophetie->media->thumbnail);
-                } else {
-                    $imagesArr = [];
-                    if (!empty($prophetie->media->url_fichier)) {
-                        $decoded = json_decode($prophetie->media->url_fichier, true);
-                        $imagesArr = is_array($decoded) ? $decoded : [];
-                    }
-                    $first = count($imagesArr) > 0 ? $imagesArr[0] : null;
-                    $thumbnailUrl = $first ? asset('storage/' . $first) : null;
-                }
-            }
             return (object)[
                 'id' => $prophetie->id,
                 'nom' => $prophetie->nom,
                 'description' => $prophetie->description,
                 'created_at' => $prophetie->created_at,
                 'media_type' => $isAudio ? 'audio' : ($isVideoLink ? 'video_link' : ($isVideoFile ? 'video_file' : ($isPdf ? 'pdf' : ($isImages ? 'images' : null)))),
-                'thumbnail_url' => $thumbnailUrl,
-                'video_url' => $isVideoFile ? asset('storage/' . $prophetie->media->url_fichier) : $thumbnailUrl,
+                'thumbnail_url' => asset('storage/' . $prophetie->media->thumbnail),
+                //'video_url' => $isVideoFile ? asset('storage/' . $prophetie->media->url_fichier) : $thumbnailUrl,
                 'media_url' => $prophetie->media && !$isImages ? asset('storage/' . $prophetie->media->url_fichier) : null,
                 'has_thumbnail' => $prophetie->media && $prophetie->media->thumbnail ? true : ($isImages && !empty(json_decode($prophetie->media->url_fichier ?? '[]', true))),
                 'is_published' => $prophetie->media->is_published ?? true,

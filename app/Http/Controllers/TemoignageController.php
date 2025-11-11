@@ -64,47 +64,15 @@ class TemoignageController extends Controller
             $isImages = $temoignage->media && $temoignage->media->type === 'images';
 
 
-            $thumbnailUrl = null;
-
-            if ($isVideoLink) {
-                $rawUrl = $temoignage->media->url_fichier;
-                $thumbnailUrl = asset('storage/' . $temoignage->media->thumbnail);
-            } elseif ($isVideoFile) {
-                // Pour les vidéos fichiers, utiliser l'image de couverture si disponible
-                if ($temoignage->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $temoignage->media->thumbnail);
-                } else {
-                    $thumbnailUrl = asset('storage/' . $temoignage->media->url_fichier);
-                }
-            } elseif ($isAudio || $isPdf) {
-                // Pour les audios et PDFs, utiliser l'image de couverture si disponible
-                if ($temoignage->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $temoignage->media->thumbnail);
-                } else {
-                    $thumbnailUrl = null; // Pas d'image, on utilisera l'icône par défaut
-                }
-            } elseif ($isImages) {
-                // Pour les images, utiliser la couverture si dispo, sinon la première image de url_fichier (JSON)
-                if ($temoignage->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $temoignage->media->thumbnail);
-                } else {
-                    $imagesArr = [];
-                    if (!empty($temoignage->media->url_fichier)) {
-                        $decoded = json_decode($temoignage->media->url_fichier, true);
-                        $imagesArr = is_array($decoded) ? $decoded : [];
-                    }
-                    $first = count($imagesArr) > 0 ? $imagesArr[0] : null;
-                    $thumbnailUrl = $first ? asset('storage/' . $first) : null;
-                }
-            }
+            
             return (object)[
                 'id' => $temoignage->id,
                 'nom' => $temoignage->nom,
                 'description' => $temoignage->description,
                 'created_at' => $temoignage->created_at,
                 'media_type' => $isAudio ? 'audio' : ($isVideoLink ? 'video_link' : ($isVideoFile ? 'video_file' : ($isPdf ? 'pdf' : ($isImages ? 'images' : null)))),
-                'thumbnail_url' => $thumbnailUrl,
-                'video_url' => $isVideoFile ? asset('storage/' . $temoignage->media->url_fichier) : $thumbnailUrl,
+                'thumbnail_url' => asset('storage/' . $temoignage->media->thumbnail),
+                //'video_url' => $isVideoFile ? asset('storage/' . $temoignage->media->url_fichier) : $thumbnailUrl,
                 'media_url' => $temoignage->media && !$isImages ? asset('storage/' . $temoignage->media->url_fichier) : null,
                 'has_thumbnail' => $temoignage->media && $temoignage->media->thumbnail ? true : ($isImages && !empty(json_decode($temoignage->media->url_fichier ?? '[]', true))),
                 'is_published' => $temoignage->media->is_published ?? true,

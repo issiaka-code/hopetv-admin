@@ -390,7 +390,6 @@
                         <div class="card home-charity-card">
                             <div class="home-charity-thumbnail-container">
                                 <div class="home-charity-thumbnail position-relative" data-home-charity-id="{{ $id }}">
-
                                     <!-- Afficher l'image de couverture ou icône par défaut -->
                                     @if ($homeCharityData->has_thumbnail)
                                     <img src="{{ $thumbnail_url }}" alt="{{ $nom }}" style="width: 100%; height: 100%; object-fit: cover;">

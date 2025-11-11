@@ -58,54 +58,15 @@ class EnseignementController extends Controller
             $isPdf = $enseignement->media && $enseignement->media->type === 'pdf';
             $isImages = $enseignement->media && $enseignement->media->type === 'images';
 
-            $thumbnailUrl = null;
-
-            if ($isVideoLink) {
-                $rawUrl = $enseignement->media->url_fichier;
-
-                if (Str::contains($rawUrl, 'youtube.com/watch?v=')) {
-                    $videoId = explode('v=', parse_url($rawUrl, PHP_URL_QUERY))[1] ?? null;
-                    $videoId = explode('&', $videoId)[0];
-                    $thumbnailUrl = $videoId ? "https://www.youtube.com/embed/$videoId" : $rawUrl;
-                } elseif (Str::contains($rawUrl, 'youtu.be/')) {
-                    $videoId = basename(parse_url($rawUrl, PHP_URL_PATH));
-                    $thumbnailUrl = "https://www.youtube.com/embed/$videoId";
-                } else {
-                    $thumbnailUrl = $rawUrl;
-                }
-            } elseif ($isVideoFile) {
-                if ($enseignement->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $enseignement->media->thumbnail);
-                } else {
-                    $thumbnailUrl = asset('storage/' . $enseignement->media->url_fichier);
-                }
-            } elseif ($isAudio || $isPdf) {
-                if ($enseignement->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $enseignement->media->thumbnail);
-                } else {
-                    $thumbnailUrl = null;
-                }
-            } elseif ($isImages) {
-                if ($enseignement->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $enseignement->media->thumbnail);
-                } else {
-                    $imagesArr = [];
-                    if (!empty($enseignement->media->url_fichier)) {
-                        $decoded = json_decode($enseignement->media->url_fichier, true);
-                        $imagesArr = is_array($decoded) ? $decoded : [];
-                    }
-                    $first = count($imagesArr) > 0 ? $imagesArr[0] : null;
-                    $thumbnailUrl = $first ? asset('storage/' . $first) : null;
-                }
-            }
+            
             return (object) [
                 'id' => $enseignement->id,
                 'nom' => $enseignement->nom,
                 'description' => $enseignement->description,
                 'created_at' => $enseignement->created_at,
                 'media_type' => $isAudio ? 'audio' : ($isVideoLink ? 'video_link' : ($isVideoFile ? 'video_file' : ($isPdf ? 'pdf' : ($isImages ? 'images' : null)))),
-                'thumbnail_url' => $thumbnailUrl,
-                'video_url' => $isVideoFile ? asset('storage/' . $enseignement->media->url_fichier) : $thumbnailUrl,
+                'thumbnail_url' => asset('storage/' . $enseignement->media->thumbnail),
+               // 'video_url' => $isVideoFile ? asset('storage/' . $enseignement->media->url_fichier) : $thumbnailUrl,
                 'media_url' => $enseignement->media && !$isImages ? asset('storage/' . $enseignement->media->url_fichier) : null,
                 'has_thumbnail' => $enseignement->media && $enseignement->media->thumbnail ? true : ($isImages && !empty(json_decode($enseignement->media->url_fichier ?? '[]', true))),
                 'is_published' => $enseignement->media->is_published ?? true,

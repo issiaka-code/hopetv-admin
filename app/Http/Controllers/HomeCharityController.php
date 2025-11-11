@@ -55,65 +55,21 @@ class HomeCharityController extends Controller
         $homeCharities = $query->paginate(12);
 
         // Préparer chaque variable pour la vue et JS
-        $homeCharitiesData = collect($homeCharities->items())->map(function ($homeCharity) {
+           $homeCharitiesData = collect($homeCharities->items())->map(function ($homeCharity) {
             $isAudio = $homeCharity->media && $homeCharity->media->type === 'audio';
             $isVideoLink = $homeCharity->media && $homeCharity->media->type === 'link';
             $isVideoFile = $homeCharity->media && $homeCharity->media->type === 'video';
             $isPdf = $homeCharity->media && $homeCharity->media->type === 'pdf';
             $isImages = $homeCharity->media && $homeCharity->media->type === 'images';
+         
 
-
-            $thumbnailUrl = null;
-
-            if ($isVideoLink) {
-                $rawUrl = $homeCharity->media->url_fichier;
-
-                if (Str::contains($rawUrl, 'youtube.com/watch?v=')) {
-                    $videoId = explode('v=', parse_url($rawUrl, PHP_URL_QUERY))[1] ?? null;
-                    $videoId = explode('&', $videoId)[0];
-                    $thumbnailUrl = $videoId ? "https://www.youtube.com/embed/$videoId" : $rawUrl;
-                } elseif (Str::contains($rawUrl, 'youtu.be/')) {
-                    $videoId = basename(parse_url($rawUrl, PHP_URL_PATH));
-                    $thumbnailUrl = "https://www.youtube.com/embed/$videoId";
-                } else {
-                    $thumbnailUrl = $rawUrl;
-                }
-            } elseif ($isVideoFile) {
-                // Pour les vidéos fichiers, utiliser l'image de couverture si disponible
-                if ($homeCharity->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $homeCharity->media->thumbnail);
-                } else {
-                    $thumbnailUrl = asset('storage/' . $homeCharity->media->url_fichier);
-                }
-            } elseif ($isAudio || $isPdf) {
-                // Pour les audios et PDFs, utiliser l'image de couverture si disponible
-                if ($homeCharity->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $homeCharity->media->thumbnail);
-                } else {
-                    $thumbnailUrl = null; // Pas d'image, on utilisera l'icône par défaut
-                }
-            } elseif ($isImages) {
-                // Pour les images, utiliser la couverture si dispo, sinon la première image de url_fichier (JSON)
-                if ($homeCharity->media->thumbnail) {
-                    $thumbnailUrl = asset('storage/' . $homeCharity->media->thumbnail);
-                } else {
-                    $imagesArr = [];
-                    if (!empty($homeCharity->media->url_fichier)) {
-                        $decoded = json_decode($homeCharity->media->url_fichier, true);
-                        $imagesArr = is_array($decoded) ? $decoded : [];
-                    }
-                    $first = count($imagesArr) > 0 ? $imagesArr[0] : null;
-                    $thumbnailUrl = $first ? asset('storage/' . $first) : null;
-                }
-            }
             return (object)[
                 'id' => $homeCharity->id,
                 'nom' => $homeCharity->nom,
                 'description' => $homeCharity->description,
                 'created_at' => $homeCharity->created_at,
                 'media_type' => $isAudio ? 'audio' : ($isVideoLink ? 'video_link' : ($isVideoFile ? 'video_file' : ($isPdf ? 'pdf' : ($isImages ? 'images' : null)))),
-                'thumbnail_url' => $thumbnailUrl,
-                'video_url' => $isVideoFile ? asset('storage/' . $homeCharity->media->url_fichier) : $thumbnailUrl,
+                'thumbnail_url' => asset('storage/' . $homeCharity->media->thumbnail),
                 'media_url' => $homeCharity->media && !$isImages ? asset('storage/' . $homeCharity->media->url_fichier) : null,
                 'has_thumbnail' => $homeCharity->media && $homeCharity->media->thumbnail ? true : ($isImages && !empty(json_decode($homeCharity->media->url_fichier ?? '[]', true))),
                 'is_published' => $homeCharity->media->is_published ?? true,
