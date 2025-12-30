@@ -20,6 +20,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::get('/info-bulles', [Apicontroller::class, 'getInfoBulles']);
+Route::get('/websocket-config', [Apicontroller::class, 'getWebSocketConfig']);
 Route::get('/playlist-du-jour', [ApiController::class, 'getPlaylistDuJour']);
 Route::get('/videos', [ApiController::class, 'getVideos']);
 Route::get('/search/videos', [ApiController::class, 'getVideossearch']);

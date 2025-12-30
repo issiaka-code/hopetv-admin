@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Smooth transitions */
+* {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+/* Rich Text Editor Styles */
+.rich-text-editor .ql-container {
+    min-height: 250px;
+    font-size: 16px;
+    border-bottom-left-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+}
+
+.rich-text-editor .ql-editor {
+    min-height: 250px;
+}
+
+.rich-text-editor .ql-editor.ql-blank::before {
+    font-style: normal;
+    color: #9ca3af;
+}
+
+.rich-text-editor .ql-toolbar {
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-bottom: none;
+}
+
+.rich-text-editor .ql-container {
+    border: 1px solid #d1d5db;
+    border-top: none;
+}
+
+.rich-text-editor .ql-toolbar.ql-snow {
+    background-color: #f9fafb;
+}

@@ -943,4 +943,36 @@ class Apicontroller extends Controller
             'similaires' => $similaires
         ]);
     }
+
+    /**
+     * Retourne la configuration WebSocket Reverb pour le frontend
+     */
+    public function getWebSocketConfig()
+    {
+        // Utiliser REVERB_HOST si défini, sinon extraire depuis APP_URL ou utiliser l'IP de la requête
+        $appUrl = env('APP_URL', 'http://localhost');
+        $defaultHost = parse_url($appUrl, PHP_URL_HOST);
+        
+        // Si REVERB_HOST n'est pas défini, utiliser le host de APP_URL
+        // Cela garantit que l'IP sera la même que celle utilisée par l'API
+        $host = env('REVERB_HOST', $defaultHost);
+        
+        // En local, utiliser le port 8080, sinon celui configuré
+        $port = env('REVERB_PORT', $defaultHost === 'localhost' || strpos($defaultHost, '192.168') !== false || strpos($defaultHost, '10.') !== false ? 8080 : 443);
+        
+        // En local, utiliser http, sinon https
+        $scheme = env('REVERB_SCHEME', ($port === 8080 || $port === 80) ? 'http' : 'https');
+        
+        $key = env('REVERB_APP_KEY', '');
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'host' => $host,
+                'port' => (int)$port,
+                'scheme' => $scheme,
+                'key' => $key,
+            ]
+        ], 200);
+    }
 }
