@@ -2,7 +2,16 @@
     NIXPACKS_PHP_ROOT_DIR = '/app/public'
 
 [phases.setup]
-    nixPkgs = ['...', 'php82-fpm', 'nginx'] # Gardez vos paquets par défaut
+    # On utilise 'php82' (fpm est inclus dedans) et on retire l'erreur
+    nixPkgs = ['php82', 'nginx', 'nodejs_20', 'php82Packages.composer']
+
+[phases.build]
+    cmds = [
+        'composer install --no-dev --optimize-autoloader',
+        'npm ci',
+        'npm run build'
+    ]
 
 [start]
-    cmd = "nginx -g 'daemon off;' & php-fpm"
+    # Commande standard pour démarrer PHP et Nginx sans doublon
+    cmd = "php-fpm -D && nginx -g 'daemon off;'"
