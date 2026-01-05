@@ -2,5 +2,6 @@
     NIXPACKS_PHP_ROOT_DIR = '/app/public'
 
 [start]
-    # On force la commande de démarrage pour court-circuiter le script automatique
-    cmd = "php-fpm -D && nginx -g 'daemon off;'"
+    # On laisse Nixpacks utiliser sa commande de démarrage automatique 
+    # mais on s'assure qu'il n'y a pas de conflit.
+    cmd = "node /assets/scripts/pre-start.js && nginx -g 'daemon off;' & php-fpm -y /etc/php-fpm.conf"
